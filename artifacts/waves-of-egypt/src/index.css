@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(0, 0, 0, 0.1);
+  --badge-outline: rgba(0, 0, 0, 0.05);
+
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, 0.03);
+  --elevate-2: rgba(0, 0, 0, 0.08);
+
+  --background: 60 14% 98%; /* Warm White */
+  --foreground: 209 81% 15%; /* Darker Blue Text */
+  --border: 210 20% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 209 81% 15%;
+  --card-border: 210 20% 90%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 209 81% 15%;
+  --popover-border: 210 20% 90%;
+
+  --primary: 209 81% 23%; /* Deep Ocean Blue */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 190 100% 42%; /* Turquoise */
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 210 20% 96%;
+  --muted-foreground: 210 20% 40%;
+
+  --accent: 27 87% 67%; /* Golden Sand */
+  --accent-foreground: 209 81% 15%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 210 20% 90%;
+  --ring: 209 81% 23%;
+  --chart-1: 190 100% 42%;
+  --chart-2: 27 87% 67%;
+  --chart-3: 209 81% 23%;
+  --chart-4: 210 20% 40%;
+  --chart-5: 209 81% 15%;
+
+  --sidebar: 60 14% 98%;
+  --sidebar-foreground: 209 81% 15%;
+  --sidebar-border: 210 20% 90%;
+  --sidebar-primary: 209 81% 23%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 20% 96%;
+  --sidebar-accent-foreground: 209 81% 15%;
+  --sidebar-ring: 209 81% 23%;
+
+  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: Menlo, monospace;
+  --radius: 0.75rem; 
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+}
+
+.dark {
+  --button-outline: rgba(255, 255, 255, 0.1);
+  --badge-outline: rgba(255, 255, 255, 0.05);
+
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.09);
+
+  --background: 216 60% 10%; /* Dark Navy */
+  --foreground: 60 14% 98%; /* Warm White */
+  --border: 216 50% 25%;
+  
+  --card: 216 50% 15%;
+  --card-foreground: 60 14% 98%;
+  --card-border: 216 50% 25%;
+
+  --popover: 216 50% 15%;
+  --popover-foreground: 60 14% 98%;
+  --popover-border: 216 50% 25%;
+
+  --primary: 27 87% 67%; /* Golden Sand pop */
+  --primary-foreground: 216 60% 10%;
+  
+  --secondary: 190 100% 42%; /* Turquoise */
+  --secondary-foreground: 216 60% 10%;
+
+  --muted: 216 50% 20%;
+  --muted-foreground: 216 20% 70%;
+
+  --accent: 209 81% 23%; 
+  --accent-foreground: 60 14% 98%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 60 14% 98%;
+
+  --input: 216 50% 25%;
+  --ring: 27 87% 67%;
+  
+  --chart-1: 190 100% 42%;
+  --chart-2: 27 87% 67%;
+  --chart-3: 209 81% 23%;
+  --chart-4: 216 20% 70%;
+  --chart-5: 60 14% 98%;
+
+  --sidebar: 216 50% 15%;
+  --sidebar-foreground: 60 14% 98%;
+  --sidebar-border: 216 50% 25%;
+  --sidebar-primary: 27 87% 67%;
+  --sidebar-primary-foreground: 216 60% 10%;
+  --sidebar-accent: 216 50% 20%;
+  --sidebar-accent-foreground: 60 14% 98%;
+  --sidebar-ring: 27 87% 67%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
+  }
+}

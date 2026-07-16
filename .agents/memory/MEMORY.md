@@ -1,0 +1,2 @@
+- [WavesOfEgypt stack](waves-of-egypt-stack.md) — auth uses token-in-Authorization-header (Bearer), not sessions; password hash uses sha256+fixed salt (not bcrypt).
+- [WavesOfEgypt API quirks](waves-of-egypt-api-quirks.md) — getFeaturedTours/getBestSellerTours return Tour[] directly; only useListTours returns TourList with .tours property.

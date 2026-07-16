@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "WavesOfEgypt"
+version = "1.0.0"
+id = "artifacts/waves-of-egypt"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20072
+
+[services.development]
+run = "pnpm --filter @workspace/waves-of-egypt run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/waves-of-egypt", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/waves-of-egypt/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20072"
+BASE_PATH = "/"
