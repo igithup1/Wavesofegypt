@@ -33,7 +33,7 @@ export default function Footer() {
               WavesOf<span className="text-accent">Egypt</span>
             </Link>
             <p className="text-primary-foreground/75 leading-relaxed text-sm max-w-xs">
-              Hurghada's #1 tour marketplace — 230+ handpicked experiences on the Red Sea. Verified operators, instant WhatsApp booking, free cancellation.
+              Hurghada's #1 tour marketplace — 33 handpicked experiences on the Red Sea. Verified operators, instant WhatsApp booking, free cancellation.
             </p>
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <MapPin className="w-4 h-4 shrink-0" /> El Mamsha, Hurghada, Red Sea, Egypt
@@ -65,12 +65,11 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm text-primary-foreground/75">
               {[
                 ['Sea & Island Trips', '/tours?categoryId=1'],
-                ['Diving', '/tours?categoryId=2'],
+                ['Diving & Snorkeling', '/tours?categoryId=2'],
                 ['Water Sports', '/tours?categoryId=3'],
-                ['Desert & Safari', '/tours?categoryId=4'],
-                ['City Experiences', '/tours?categoryId=5'],
-                ['Airport Transfers', '/tours?categoryId=6'],
-                ['Historical Day Trips', '/tours?categoryId=7'],
+                ['Safari & Desert', '/tours?categoryId=4'],
+                ['Luxor & Cairo Tours', '/tours?categoryId=5'],
+                ['Transfers', '/tours?categoryId=6'],
               ].map(([label, href]) => (
                 <li key={label}>
                   <Link href={href} className="hover:text-accent transition-colors">{label}</Link>

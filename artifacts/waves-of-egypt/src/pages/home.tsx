@@ -13,7 +13,6 @@ import {
   useGetFeaturedTours,
   useListCategories,
   useGetBestSellerTours,
-  useGetPlatformStats,
   useListTours,
 } from '@workspace/api-client-react';
 
@@ -27,7 +26,7 @@ const QUICK_CATS = [
   { emoji: '🤿', label: 'Diving', id: 2 },
   { emoji: '🌊', label: 'Water Sports', id: 3 },
   { emoji: '🏜', label: 'Safari', id: 4 },
-  { emoji: '🏛', label: 'Day Trips', id: 7 },
+  { emoji: '🏛', label: 'Luxor & Cairo', id: 5 },
   { emoji: '🚐', label: 'Transfers', id: 6 },
 ];
 
@@ -225,7 +224,6 @@ export default function Home() {
 
   const { data: bestSellers } = useGetBestSellerTours({ limit: 8 });
   const { data: categories } = useListCategories();
-  const { data: stats } = useGetPlatformStats();
   const { data: specialOffers } = useListTours({ limit: 4, sortBy: 'price_asc' } as any);
   const { data: featuredTours } = useGetFeaturedTours({ limit: 4 });
 
@@ -240,7 +238,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative min-h-[85dvh] md:min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 z-0">
           <img
@@ -253,7 +251,7 @@ export default function Home() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 md:px-6 text-center text-white mt-20 flex flex-col items-center">
+        <div className="relative z-10 container mx-auto px-4 md:px-6 text-center text-white mt-16 md:mt-20 mb-20 md:mb-24 flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
@@ -316,9 +314,9 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 z-10 bg-black/50 backdrop-blur-md border-t border-white/10">
           <div className="container mx-auto px-4 py-4 flex flex-wrap justify-center md:justify-around gap-6">
             {[
-              { value: `${stats?.totalTours || '231'}+`, label: 'Experiences' },
-              { value: `${stats?.happyTravelers ? Number(stats.happyTravelers).toLocaleString() : '50,000'}+`, label: 'Happy Travelers' },
-              { value: stats?.averageRating ? `${Number(stats.averageRating).toFixed(1)} ★` : '4.8 ★', label: 'Average Rating' },
+              { value: '36+', label: 'Experiences' },
+              { value: '15,000+', label: 'Happy Travelers' },
+              { value: '4.9 ★', label: 'Average Rating' },
               { value: '24/7', label: 'WhatsApp Support' },
             ].map((s) => (
               <div key={s.label} className="text-center text-white">
@@ -360,7 +358,7 @@ export default function Home() {
           <SectionHeader
             label="Browse by Activity"
             title="What Do You Want to Do?"
-            subtitle="Seven ways to experience the magic of Hurghada and the Red Sea."
+            subtitle="Six ways to experience the magic of Hurghada and the Red Sea."
           />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {categories?.map((cat, i) => {
@@ -413,7 +411,7 @@ export default function Home() {
               { icon: <MapPin className="w-7 h-7" />, title: 'Local Hurghada Experts', desc: '100% Hurghada-based team. We\'ve done every tour ourselves and know what\'s worth your time.' },
               { icon: <Car className="w-7 h-7" />, title: 'Hotel Pickup Included', desc: 'Free door-to-door pickup from every hotel and resort in Hurghada for most tours.' },
               { icon: <Shield className="w-7 h-7" />, title: 'Secure & Verified', desc: 'All operators are licensed, insured, and personally verified. Your safety is our top priority.' },
-              { icon: <Users className="w-7 h-7" />, title: 'Thousands of Happy Travelers', desc: '50,000+ travelers have booked with us. Read thousands of genuine 5-star reviews.' },
+              { icon: <Users className="w-7 h-7" />, title: '15,000+ Happy Travelers', desc: '15,000+ travelers have booked with us. Read hundreds of genuine 5-star reviews.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -629,7 +627,7 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4">Ready for Your Hurghada Adventure?</h2>
           <p className="text-accent-foreground/80 text-lg max-w-xl mx-auto mb-10">
-            231+ experiences. Free cancellation. Instant WhatsApp confirmation. Hotel pickup included.
+            33 real experiences. Free cancellation. Instant WhatsApp confirmation. Hotel pickup included.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button

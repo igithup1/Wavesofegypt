@@ -117,8 +117,8 @@ export default function TourDetail() {
   const whatsappNum = (tour as any).whatsappNumber?.replace(/[^0-9]/g, '') || '201001234567';
   const whatsappUrl = `https://wa.me/${whatsappNum}?text=${whatsappMsg}`;
 
-  // Build gallery: cover + extras
-  const galleryImages = [tour.coverImage, ...(tour.images?.length ? tour.images : GALLERY_EXTRAS.slice(0, 5))];
+  // Build gallery: cover image only (or cover + additional images if provided)
+  const galleryImages = tour.images?.length ? [tour.coverImage, ...tour.images] : [tour.coverImage];
   const faqData: Array<{ question: string; answer: string }> = (tour as any).faq || [];
   const videoUrl: string | null = (tour as any).videoUrl || null;
 

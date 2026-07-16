@@ -243,7 +243,7 @@ export default function Tours() {
             Hurghada Experiences
           </h1>
           <p className="text-primary-foreground/70 mb-6">
-            {toursData?.total ? `${toursData.total} experiences available` : '230+ experiences in Hurghada'}
+            {toursData?.total ? `${toursData.total} experiences available` : '33+ experiences in Hurghada'}
           </p>
 
           {/* Search bar */}
@@ -292,7 +292,7 @@ export default function Tours() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6 py-10">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block w-72 shrink-0">
             <div className="sticky top-24">
@@ -300,24 +300,24 @@ export default function Tours() {
             </div>
           </aside>
 
+          {/* Results column (mobile filter lives inside) */}
+          <div className="flex-1 min-w-0 w-full">
+
           {/* Mobile filter toggle */}
-          <div className="lg:hidden w-full">
+          <div className="lg:hidden w-full mb-6">
             <button
               onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm font-medium mb-6"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm font-medium"
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
             </button>
             {mobileFilterOpen && (
-              <div className="mb-6">
+              <div className="mt-4">
                 <FilterPanel />
               </div>
             )}
           </div>
-
-          {/* Results */}
-          <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground text-sm">
                 {isLoading ? 'Loading…' : `${toursData?.total ?? 0} experiences found`}
