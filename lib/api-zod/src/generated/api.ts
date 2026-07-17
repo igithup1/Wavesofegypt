@@ -48,7 +48,8 @@ export const LoginResponse = zod.object({
   "avatar": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "createdAt": zod.coerce.date().optional()
-})
+}),
+  "token": zod.string().describe('Bearer token to include in subsequent API requests')
 })
 
 
@@ -75,7 +76,8 @@ export const RegisterResponse = zod.object({
   "avatar": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "createdAt": zod.coerce.date().optional()
-})
+}),
+  "token": zod.string().describe('Bearer token to include in subsequent API requests')
 })
 
 
@@ -349,7 +351,10 @@ export const GetTourResponse = zod.object({
   "reviews": zod.array(zod.object({
   "id": zod.number(),
   "tourId": zod.number(),
-  "userId": zod.number(),
+  "userId": zod.number().nullish(),
+  "name": zod.string().nullish().describe('Reviewer display name'),
+  "country": zod.string().nullish().describe('Reviewer country'),
+  "tourTitle": zod.string().nullish(),
   "userName": zod.string().nullish(),
   "userAvatar": zod.string().nullish(),
   "rating": zod.number(),
@@ -602,8 +607,8 @@ export const ListReviewsResponseItem = zod.object({
   "id": zod.number(),
   "tourId": zod.number(),
   "userId": zod.number().nullish(),
-  "name": zod.string(),
-  "country": zod.string().nullish(),
+  "name": zod.string().nullish().describe('Reviewer display name'),
+  "country": zod.string().nullish().describe('Reviewer country'),
   "tourTitle": zod.string().nullish(),
   "userName": zod.string().nullish(),
   "userAvatar": zod.string().nullish(),
@@ -623,8 +628,8 @@ export const createReviewBodyRatingMax = 5;
 
 export const CreateReviewBody = zod.object({
   "tourId": zod.number(),
-  "name": zod.string().min(1),
-  "country": zod.string().optional(),
+  "name": zod.string().describe('Reviewer display name'),
+  "country": zod.string().optional().describe('Reviewer country (optional)'),
   "rating": zod.number().min(1).max(createReviewBodyRatingMax),
   "comment": zod.string().optional()
 })
@@ -633,8 +638,8 @@ export const CreateReviewResponse = zod.object({
   "id": zod.number(),
   "tourId": zod.number(),
   "userId": zod.number().nullish(),
-  "name": zod.string(),
-  "country": zod.string().nullish(),
+  "name": zod.string().nullish().describe('Reviewer display name'),
+  "country": zod.string().nullish().describe('Reviewer country'),
   "tourTitle": zod.string().nullish(),
   "userName": zod.string().nullish(),
   "userAvatar": zod.string().nullish(),

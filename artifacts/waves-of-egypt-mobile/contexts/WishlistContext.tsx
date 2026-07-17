@@ -108,6 +108,15 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  // Reset the merge gate when the API wishlist becomes unavailable (e.g. user
+  // logs out). This ensures the next successful fetch after login triggers a
+  // fresh merge.
+  useEffect(() => {
+    if (!apiSuccess) {
+      mergedApiRef.current = false;
+    }
+  }, [apiSuccess]);
+
   // Merge API list into local state the first time it loads successfully.
   useEffect(() => {
     if (!apiSuccess || !apiWishlist || mergedApiRef.current) return;

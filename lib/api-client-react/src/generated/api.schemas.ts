@@ -61,6 +61,8 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
+  /** Bearer token to include in subsequent API requests */
+  token: string;
 }
 
 export type DestinationRegion = typeof DestinationRegion[keyof typeof DestinationRegion];
@@ -202,8 +204,15 @@ export interface Review {
   tourId: number;
   /** @nullable */
   userId?: number | null;
-  name: string;
-  /** @nullable */
+  /**
+     * Reviewer display name
+     * @nullable
+     */
+  name?: string | null;
+  /**
+     * Reviewer country
+     * @nullable
+     */
   country?: string | null;
   /** @nullable */
   tourTitle?: string | null;
@@ -300,7 +309,9 @@ export interface AvailabilitySlot {
 
 export interface ReviewInput {
   tourId: number;
+  /** Reviewer display name */
   name: string;
+  /** Reviewer country (optional) */
   country?: string;
   /**
      * @minimum 1
@@ -447,6 +458,9 @@ limit?: number;
 
 export type ListReviewsParams = {
 tourId?: number;
+/**
+ * Filter by minimum rating
+ */
 rating?: number;
 limit?: number;
 offset?: number;

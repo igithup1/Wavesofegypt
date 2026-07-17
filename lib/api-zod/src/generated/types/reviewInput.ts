@@ -8,6 +8,10 @@
 
 export interface ReviewInput {
   tourId: number;
+  /** Reviewer display name */
+  name: string;
+  /** Reviewer country (optional) */
+  country?: string;
   /**
      * @minimum 1
      * @maximum 5

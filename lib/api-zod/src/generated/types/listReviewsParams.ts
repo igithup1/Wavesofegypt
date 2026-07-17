@@ -7,7 +7,11 @@
  */
 
 export type ListReviewsParams = {
-tourId: number;
+tourId?: number;
+/**
+ * Filter by minimum rating
+ */
+rating?: number;
 limit?: number;
 offset?: number;
 };

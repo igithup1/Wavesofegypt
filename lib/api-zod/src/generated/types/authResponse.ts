@@ -9,4 +9,6 @@ import type { User } from './user';
 
 export interface AuthResponse {
   user: User;
+  /** Bearer token to include in subsequent API requests */
+  token: string;
 }

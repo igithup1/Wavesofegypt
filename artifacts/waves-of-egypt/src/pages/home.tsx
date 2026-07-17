@@ -488,7 +488,7 @@ export default function Home() {
                 <div className="pt-4 mt-4 border-t border-border flex items-center gap-3">
                   <img
                     src={getAvatar(rev.id)}
-                    alt={rev.name}
+                    alt={rev.name ?? ''}
                     loading="lazy"
                     className="w-11 h-11 rounded-full object-cover ring-2 ring-border"
                   />

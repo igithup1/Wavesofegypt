@@ -9,7 +9,20 @@
 export interface Review {
   id: number;
   tourId: number;
-  userId: number;
+  /** @nullable */
+  userId?: number | null;
+  /**
+     * Reviewer display name
+     * @nullable
+     */
+  name?: string | null;
+  /**
+     * Reviewer country
+     * @nullable
+     */
+  country?: string | null;
+  /** @nullable */
+  tourTitle?: string | null;
   /** @nullable */
   userName?: string | null;
   /** @nullable */

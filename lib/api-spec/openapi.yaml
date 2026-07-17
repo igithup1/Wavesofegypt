@@ -469,9 +469,13 @@ paths:
       parameters:
         - name: tourId
           in: query
-          required: true
           schema:
             type: integer
+        - name: rating
+          in: query
+          schema:
+            type: number
+            description: Filter by minimum rating
         - name: limit
           in: query
           schema:
@@ -791,10 +795,13 @@ components:
 
     AuthResponse:
       type: object
-      required: [user]
+      required: [user, token]
       properties:
         user:
           $ref: "#/components/schemas/User"
+        token:
+          type: string
+          description: Bearer token to include in subsequent API requests
 
     User:
       type: object
@@ -1133,14 +1140,22 @@ components:
     # ── REVIEW ───────────────────────────────────────────────────────────────
     Review:
       type: object
-      required: [id, tourId, userId, rating, createdAt]
+      required: [id, tourId, rating, createdAt]
       properties:
         id:
           type: integer
         tourId:
           type: integer
         userId:
-          type: integer
+          type: ["integer", "null"]
+        name:
+          type: ["string", "null"]
+          description: Reviewer display name
+        country:
+          type: ["string", "null"]
+          description: Reviewer country
+        tourTitle:
+          type: ["string", "null"]
         userName:
           type: ["string", "null"]
         userAvatar:
@@ -1155,10 +1170,16 @@ components:
 
     ReviewInput:
       type: object
-      required: [tourId, rating]
+      required: [tourId, rating, name]
       properties:
         tourId:
           type: integer
+        name:
+          type: string
+          description: Reviewer display name
+        country:
+          type: string
+          description: Reviewer country (optional)
         rating:
           type: number
           minimum: 1

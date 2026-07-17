@@ -1455,7 +1455,7 @@ export function useGetTourAvailability<TData = Awaited<ReturnType<typeof getTour
 
 
 
-export const getListReviewsUrl = (params: ListReviewsParams,) => {
+export const getListReviewsUrl = (params?: ListReviewsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -1473,7 +1473,7 @@ export const getListReviewsUrl = (params: ListReviewsParams,) => {
 /**
  * @summary List reviews for a tour
  */
-export const listReviews = async (params: ListReviewsParams, options?: RequestInit): Promise<Review[]> => {
+export const listReviews = async (params?: ListReviewsParams, options?: RequestInit): Promise<Review[]> => {
 
   return customFetch<Review[]>(getListReviewsUrl(params),
   {
@@ -1495,7 +1495,7 @@ export const getListReviewsQueryKey = (params?: ListReviewsParams,) => {
     }
 
 
-export const getListReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listReviews>>, TError = ErrorType<unknown>>(params: ListReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listReviews>>, TError = ErrorType<unknown>>(params?: ListReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1522,7 +1522,7 @@ export type ListReviewsQueryError = ErrorType<unknown>
  */
 
 export function useListReviews<TData = Awaited<ReturnType<typeof listReviews>>, TError = ErrorType<unknown>>(
- params: ListReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListReviewsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 

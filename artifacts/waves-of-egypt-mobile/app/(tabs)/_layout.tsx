@@ -77,6 +77,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name={focused ? 'user' : 'user'} size={22} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

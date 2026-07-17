@@ -546,8 +546,8 @@ export default function TourDetail() {
                   {reviewsData.map(rev => (
                     <ReviewCard
                       key={rev.id}
-                      name={rev.name}
-                      country={rev.country}
+                      name={rev.name ?? ''}
+                      country={rev.country ?? undefined}
                       rating={rev.rating}
                       comment={rev.comment}
                       createdAt={typeof rev.createdAt === 'string' ? rev.createdAt : new Date(rev.createdAt).toISOString()}
