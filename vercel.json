@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "artifacts/waves-of-egypt/dist/public",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
