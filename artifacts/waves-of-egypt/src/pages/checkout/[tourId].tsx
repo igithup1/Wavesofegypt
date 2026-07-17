@@ -27,6 +27,7 @@ export default function Checkout() {
   const [date, setDate] = useState<Date>();
   const [participants, setParticipants] = useState(1);
   const [notes, setNotes] = useState('');
+  const [capacityError, setCapacityError] = useState<string | null>(null);
   
   const createBookingMutation = useCreateBooking();
 
@@ -47,6 +48,7 @@ export default function Checkout() {
       return;
     }
 
+    setCapacityError(null);
     createBookingMutation.mutate(
       { 
         data: { 
@@ -62,7 +64,13 @@ export default function Checkout() {
           setLocation(`/booking-confirmation?id=${data.id}`);
         },
         onError: (error) => {
-          toast.error(error.message || 'Failed to complete booking');
+          const msg = error.message || 'Failed to complete booking';
+          if (error.status === 409) {
+            // Capacity exceeded — surface inline near the date picker
+            const apiMsg = (error.data as { error?: string } | null)?.error;
+            setCapacityError(apiMsg ?? 'This date is fully booked. Please choose a different date.');
+          }
+          toast.error(msg);
         }
       }
     );
@@ -125,7 +133,8 @@ export default function Checkout() {
                           variant={"outline"}
                           className={cn(
                             "w-full h-12 justify-start text-left font-normal border-border",
-                            !date && "text-muted-foreground"
+                            !date && "text-muted-foreground",
+                            capacityError && "border-destructive"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -136,12 +145,15 @@ export default function Checkout() {
                         <Calendar
                           mode="single"
                           selected={date}
-                          onSelect={setDate}
+                          onSelect={(d) => { setDate(d); setCapacityError(null); }}
                           disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
+                    {capacityError && (
+                      <p className="text-sm text-destructive font-medium">{capacityError}</p>
+                    )}
                   </div>
 
                   <div className="space-y-3">

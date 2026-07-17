@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sum, ne, sql } from "drizzle-orm";
 import { db, bookingsTable, toursTable, usersTable } from "@workspace/db";
 import {
   ListBookingsQueryParams,
@@ -84,31 +84,88 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
 
   const { tourId, date, participants, notes } = parsed.data;
 
-  const [tour] = await db.select().from(toursTable).where(eq(toursTable.id, tourId));
-  if (!tour) {
-    res.status(404).json({ error: "Tour not found" });
-    return;
-  }
-
-  const totalPrice = Number(tour.price) * participants;
-
+  // Normalise date to YYYY-MM-DD string once, before entering the transaction.
   // zod.coerce.date() in the generated schema converts the incoming ISO string
   // to a JS Date; Drizzle's date({ mode: "string" }) column requires YYYY-MM-DD.
   const dateStr = date instanceof Date
     ? date.toISOString().split("T")[0]
     : String(date);
 
-  const [booking] = await db
-    .insert(bookingsTable)
-    .values({ tourId, userId: user.id, date: dateStr, participants, totalPrice: String(totalPrice), notes })
-    .returning();
+  // Sentinel: set inside the transaction when capacity is exceeded.
+  let capacityError: { status: number; body: object } | null = null;
 
-  // Increment booking count
-  await db.update(toursTable).set({ bookingCount: (tour.bookingCount ?? 0) + 1 }).where(eq(toursTable.id, tourId));
+  const booking = await db.transaction(async (tx) => {
+    // Acquire an exclusive advisory lock for this tour for the duration of the
+    // transaction.  pg_advisory_xact_lock serialises concurrent booking
+    // attempts for the same tour so the capacity check + insert are atomic.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${tourId})`);
+
+    const [tour] = await tx.select().from(toursTable).where(eq(toursTable.id, tourId));
+    if (!tour) {
+      capacityError = { status: 404, body: { error: "Tour not found" } };
+      return null;
+    }
+
+    // Check capacity: sum non-cancelled participants for this tour + date.
+    if (tour.maxParticipants != null) {
+      const [capacityRow] = await tx
+        .select({ total: sum(bookingsTable.participants) })
+        .from(bookingsTable)
+        .where(
+          and(
+            eq(bookingsTable.tourId, tourId),
+            eq(bookingsTable.date, dateStr),
+            ne(bookingsTable.status, "cancelled")
+          )
+        );
+
+      const bookedCount = Number(capacityRow?.total ?? 0);
+      if (bookedCount + participants > tour.maxParticipants) {
+        const remaining = Math.max(0, tour.maxParticipants - bookedCount);
+        capacityError = {
+          status: 409,
+          body: {
+            code: "TOUR_DATE_FULL",
+            error: remaining === 0
+              ? "This date is fully booked. Please choose a different date."
+              : `Only ${remaining} spot${remaining === 1 ? "" : "s"} remaining on this date.`,
+          },
+        };
+        return null;
+      }
+    }
+
+    const totalPrice = Number(tour.price) * participants;
+
+    const [newBooking] = await tx
+      .insert(bookingsTable)
+      .values({ tourId, userId: user.id, date: dateStr, participants, totalPrice: String(totalPrice), notes })
+      .returning();
+
+    // Increment booking count within the same transaction.
+    await tx.update(toursTable)
+      .set({ bookingCount: (tour.bookingCount ?? 0) + 1 })
+      .where(eq(toursTable.id, tourId));
+
+    return { booking: newBooking, tour };
+  });
+
+  if (capacityError) {
+    const { status, body } = capacityError as { status: number; body: object };
+    res.status(status).json(body);
+    return;
+  }
+
+  if (!booking) {
+    res.status(500).json({ error: "Booking could not be created" });
+    return;
+  }
+
+  const { booking: newBooking, tour } = booking;
 
   // Send confirmation email (non-blocking — failure does not affect the response)
-  const bookingRef = `WOE-${String(booking.id).padStart(5, "0")}`;
-  const bookingDate = new Date(booking.date).toLocaleDateString("en-US", {
+  const bookingRef = `WOE-${String(newBooking.id).padStart(5, "0")}`;
+  const bookingDate = new Date(newBooking.date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -119,12 +176,12 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
     bookingRef,
     tourName: tour.title,
     date: bookingDate,
-    participants: booking.participants,
-    totalPrice: totalPrice,
+    participants: newBooking.participants,
+    totalPrice: Number(newBooking.totalPrice),
   }).catch(() => {/* already logged inside sendBookingConfirmationEmail */});
 
   res.status(201).json(CreateBookingResponse.parse(
-    formatBooking(booking, tour.title, tour.coverImage, user.name)
+    formatBooking(newBooking, tour.title, tour.coverImage, user.name)
   ));
 });
 
