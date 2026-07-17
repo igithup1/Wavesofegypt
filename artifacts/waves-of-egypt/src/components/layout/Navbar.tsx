@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGetWishlist } from '@workspace/api-client-react';
-import { Menu, X, Heart, User as UserIcon, Sun, Moon } from 'lucide-react';
+import { Menu, X, Heart, User as UserIcon, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+const WA_URL = 'https://wa.me/201001234567?text=' + encodeURIComponent('Hello! I would like to book a tour in Hurghada. Can you help me?');
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -12,18 +14,16 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const isHome = location === '/';
-  
-  const { data: wishlistItems } = useGetWishlist({ 
-    query: { enabled: !!user } 
+
+  const { data: wishlistItems } = useGetWishlist({
+    query: { enabled: !!user }
   });
 
   const wishlistCount = wishlistItems?.length || 0;
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -31,9 +31,15 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
+
   const navLinks = [
-    { label: 'Destinations', path: '/destinations' },
-    { label: 'Tours', path: '/tours' },
+    { label: 'Home', path: '/' },
+    { label: 'All Tours', path: '/tours' },
     { label: 'About', path: '/about' },
   ];
 
@@ -44,38 +50,53 @@ export default function Navbar() {
     return '/dashboard';
   };
 
+  const isTransparent = !isScrolled && isHome;
+
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled || !isHome 
-      ? 'bg-background/95 backdrop-blur-md border-b shadow-sm py-4' 
-      : 'bg-transparent py-6 dark:bg-black/20 dark:backdrop-blur-sm'
+    isTransparent
+      ? 'bg-transparent py-5'
+      : 'bg-background/97 backdrop-blur-md border-b border-border/60 shadow-sm py-3'
   }`;
 
-  const textClasses = isScrolled || !isHome 
-    ? 'text-foreground hover:text-primary' 
-    : 'text-white hover:text-white/80';
+  const textClasses = isTransparent
+    ? 'text-white/90 hover:text-white'
+    : 'text-foreground hover:text-primary';
 
-  const logoClasses = isScrolled || !isHome 
-    ? 'text-primary' 
-    : 'text-white';
+  const logoAccent = isTransparent ? 'text-white/80' : 'text-accent';
 
   return (
     <nav className={navClasses}>
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link href="/" className={`text-2xl font-serif font-bold tracking-tight transition-colors ${logoClasses}`}>
-          WavesOf<span className={isScrolled || !isHome ? "text-accent" : "text-white/90"}>Egypt</span>
+        {/* Logo */}
+        <Link href="/" className={`text-2xl font-serif font-bold tracking-tight transition-colors ${isTransparent ? 'text-white' : 'text-primary'}`}>
+          WavesOf<span className={logoAccent}>Egypt</span>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center space-x-8">
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-7">
           {navLinks.map((link) => (
-            <Link key={link.path} href={link.path} className={`font-medium transition-colors ${textClasses}`}>
+            <Link
+              key={link.path}
+              href={link.path}
+              className={`font-medium transition-colors text-sm ${textClasses} ${location === link.path ? (isTransparent ? 'text-white font-semibold' : 'text-primary font-semibold') : ''}`}
+            >
               {link.label}
             </Link>
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="hidden md:flex items-center space-x-4">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          <a
+            href={WA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Book via WhatsApp
+          </a>
+
           {user && (
             <Link href="/wishlist" className={`relative p-2 transition-colors ${textClasses}`}>
               <Heart className="w-5 h-5" />
@@ -90,7 +111,11 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant={isScrolled || !isHome ? "outline" : "secondary"} className={`gap-2 ${!isScrolled && isHome ? 'bg-white/10 text-white hover:bg-white/20 border-white/20' : ''}`}>
+                <Button
+                  variant={isTransparent ? 'ghost' : 'outline'}
+                  size="sm"
+                  className={`gap-2 ${isTransparent ? 'text-white hover:bg-white/10 border-white/20' : ''}`}
+                >
                   <UserIcon className="w-4 h-4" />
                   <span className="hidden lg:inline-block">{user.name}</span>
                 </Button>
@@ -111,54 +136,74 @@ export default function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/login" className={`font-medium transition-colors ${textClasses}`}>
+            <Link href="/login" className={`text-sm font-medium transition-colors ${textClasses}`}>
               Log in
             </Link>
           )}
         </div>
 
-        {/* Mobile menu button */}
-        <button 
-          className="md:hidden p-2"
+        {/* Mobile hamburger */}
+        <button
+          className={`md:hidden p-2 rounded-lg transition-colors ${isTransparent ? 'text-white hover:bg-white/10' : 'text-foreground hover:bg-muted'}`}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle menu"
         >
-          {isMobileMenuOpen ? (
-            <X className={isScrolled || !isHome ? "text-foreground" : "text-white"} />
-          ) : (
-            <Menu className={isScrolled || !isHome ? "text-foreground" : "text-white"} />
-          )}
+          {isMobileMenuOpen
+            ? <X className="w-6 h-6" />
+            : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Nav */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg py-4 px-4 flex flex-col space-y-4">
+      {/* Mobile Nav — smooth slide-down */}
+      <div
+        className={`md:hidden bg-background border-b border-border shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-4 pt-3 pb-5 flex flex-col gap-1">
           {navLinks.map((link) => (
-            <Link key={link.path} href={link.path} className="text-lg font-medium text-foreground py-2 border-b border-border/50">
+            <Link
+              key={link.path}
+              href={link.path}
+              className={`text-base font-medium py-3 px-3 rounded-xl transition-colors ${location === link.path ? 'bg-primary/8 text-primary' : 'text-foreground hover:bg-muted'}`}
+            >
               {link.label}
             </Link>
           ))}
-          <Link href="/wishlist" className="text-lg font-medium text-foreground py-2 border-b border-border/50 flex items-center justify-between">
-            Wishlist
-            {wishlistCount > 0 && <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs">{wishlistCount}</span>}
-          </Link>
-          
+
+          {/* WhatsApp CTA in mobile menu */}
+          <a
+            href={WA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-base font-semibold px-4 py-3 rounded-xl transition-colors mt-2"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Book via WhatsApp
+          </a>
+
           {user ? (
             <>
-              <Link href={getDashboardPath()} className="text-lg font-medium text-foreground py-2 border-b border-border/50">
+              <Link href={getDashboardPath()} className="text-base font-medium py-3 px-3 rounded-xl text-foreground hover:bg-muted">
                 Dashboard
               </Link>
-              <button onClick={() => logout()} className="text-lg font-medium text-destructive text-left py-2">
+              {wishlistCount > 0 && (
+                <Link href="/wishlist" className="text-base font-medium py-3 px-3 rounded-xl text-foreground hover:bg-muted flex items-center justify-between">
+                  Wishlist
+                  <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs">{wishlistCount}</span>
+                </Link>
+              )}
+              <button onClick={() => logout()} className="text-base font-medium text-destructive text-left py-3 px-3 rounded-xl hover:bg-muted/60">
                 Log out
               </button>
             </>
           ) : (
-            <Link href="/login" className="text-lg font-medium text-foreground py-2">
+            <Link href="/login" className="text-base font-medium py-3 px-3 rounded-xl text-foreground hover:bg-muted">
               Log in
             </Link>
           )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

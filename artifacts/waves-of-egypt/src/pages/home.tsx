@@ -30,14 +30,14 @@ const QUICK_CATS = [
   { emoji: '🚐', label: 'Transfers', id: 6 },
 ];
 
+// Realistic category images — each matches its activity
 const CAT_IMAGES: Record<number, string> = {
-  1: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&q=80',
-  2: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&q=80',
-  3: 'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=600&q=80',
-  4: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80',
-  5: 'https://images.unsplash.com/photo-1568322445389-f64ac2515020?w=600&q=80',
-  6: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&q=80',
-  7: 'https://images.unsplash.com/photo-1539650116574-75c0c6d14e80?w=600&q=80',
+  1: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&q=85', // Sea & Island: turquoise tropical beach
+  2: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=700&q=85', // Diving: scuba diver with fish
+  3: 'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=700&q=85', // Water Sports: jet ski / water action
+  4: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=700&q=85', // Safari: desert / quad bikes
+  5: 'https://images.unsplash.com/photo-1568322445389-f64ac2515020?w=700&q=85', // Luxor & Cairo: Egyptian temples
+  6: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=700&q=85', // Transfers: airport / shuttle van
 };
 
 const DESTINATIONS = [
@@ -351,7 +351,7 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          CATEGORIES — large premium cards
+          CATEGORIES — uniform premium cards
       ══════════════════════════════════════════════════════ */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 md:px-6">
@@ -360,7 +360,7 @@ export default function Home() {
             title="What Do You Want to Do?"
             subtitle="Six ways to experience the magic of Hurghada and the Red Sea."
           />
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {categories?.map((cat, i) => {
               const qc = QUICK_CATS.find(q => q.id === cat.id);
               return (
@@ -370,21 +370,22 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.07 }}
-                  className={`relative rounded-2xl overflow-hidden cursor-pointer group ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}
-                  style={{ minHeight: i === 0 ? 340 : 160 }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  whileTap={{ scale: 0.98 }}
+                  className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-[3/4] sm:aspect-[4/3]"
                   onClick={() => setLocation(`/tours?categoryId=${cat.id}`)}
                 >
                   <img
                     src={CAT_IMAGES[cat.id] || CAT_IMAGES[1]}
                     alt={cat.name}
                     loading="lazy"
-                    className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-700"
+                    className="w-full h-full object-cover absolute inset-0 group-hover:scale-108 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
                     <div className="text-2xl mb-1">{qc?.emoji || '🏖'}</div>
-                    <h3 className="text-white font-bold text-lg leading-tight">{cat.name}</h3>
-                    <p className="text-white/70 text-xs mt-0.5">{cat.tourCount || '20+'} tours</p>
+                    <h3 className="text-white font-bold text-base leading-tight">{cat.name}</h3>
+                    <p className="text-white/70 text-xs mt-0.5">{cat.tourCount || '5+'} experiences</p>
                   </div>
                 </motion.div>
               );
@@ -404,14 +405,14 @@ export default function Home() {
               We're local Hurghada experts — not a global aggregator. Every operator is personally vetted.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { icon: <Tag className="w-7 h-7" />, title: 'Best Price Guarantee', desc: 'Find the same tour cheaper? We\'ll match the price — no questions asked.' },
-              { icon: <MessageCircle className="w-7 h-7" />, title: 'Instant WhatsApp Booking', desc: 'Book any tour in minutes via WhatsApp. Our team is online 24/7 in English & Arabic.' },
-              { icon: <MapPin className="w-7 h-7" />, title: 'Local Hurghada Experts', desc: '100% Hurghada-based team. We\'ve done every tour ourselves and know what\'s worth your time.' },
-              { icon: <Car className="w-7 h-7" />, title: 'Hotel Pickup Included', desc: 'Free door-to-door pickup from every hotel and resort in Hurghada for most tours.' },
-              { icon: <Shield className="w-7 h-7" />, title: 'Secure & Verified', desc: 'All operators are licensed, insured, and personally verified. Your safety is our top priority.' },
-              { icon: <Users className="w-7 h-7" />, title: '15,000+ Happy Travelers', desc: '15,000+ travelers have booked with us. Read hundreds of genuine 5-star reviews.' },
+              { icon: <Tag className="w-6 h-6" />, title: 'Best Price Guarantee', desc: 'Find the same tour cheaper? We\'ll match the price — no questions asked.' },
+              { icon: <MessageCircle className="w-6 h-6" />, title: 'Instant WhatsApp Confirmation', desc: 'Book any tour in minutes via WhatsApp. Our team is online 24/7 in English & Arabic.' },
+              { icon: <Shield className="w-6 h-6" />, title: 'Free Cancellation Available', desc: 'Most tours include free cancellation up to 24 hours before departure. No risk.' },
+              { icon: <Award className="w-6 h-6" />, title: 'Verified Local Operators', desc: 'All operators are licensed, insured, and personally verified by our Hurghada team.' },
+              { icon: <Car className="w-6 h-6" />, title: 'Hotel Pickup Included', desc: 'Free door-to-door pickup from every hotel and resort in Hurghada for most tours.' },
+              { icon: <Users className="w-6 h-6" />, title: '15,000+ Happy Travelers', desc: 'Thousands of travelers have booked with us. Hundreds of genuine 5-star reviews.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -419,13 +420,13 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                className="flex gap-5 bg-primary-foreground/8 backdrop-blur-sm border border-primary-foreground/10 p-6 rounded-2xl"
+                className="flex gap-4 bg-white/6 backdrop-blur-sm border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-colors"
               >
                 <div className="text-accent shrink-0 mt-0.5">{item.icon}</div>
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
-                    <h3 className="font-bold text-base">{item.title}</h3>
+                    <h3 className="font-bold text-sm md:text-base">{item.title}</h3>
                   </div>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed">{item.desc}</p>
                 </div>
@@ -445,7 +446,7 @@ export default function Home() {
             title="Popular Destinations"
             subtitle="From Red Sea islands to ancient temples — explore the best places from Hurghada."
           />
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {DESTINATIONS.map((dest, i) => (
               <motion.div
                 key={dest.name}
@@ -453,20 +454,21 @@ export default function Home() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setLocation(`/tours?search=${encodeURIComponent(dest.query)}`)}
-                className="relative rounded-2xl overflow-hidden cursor-pointer group"
-                style={{ height: i === 0 || i === 3 ? 260 : 200 }}
+                className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-[4/3]"
               >
                 <img
                   src={dest.img}
                   alt={dest.name}
                   loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-bold text-lg leading-tight">{dest.name}</h3>
-                  <p className="text-white/70 text-xs">{dest.tagline}</p>
+                  <h3 className="text-white font-bold text-base leading-tight">{dest.name}</h3>
+                  <p className="text-white/70 text-xs mt-0.5">{dest.tagline}</p>
                 </div>
               </motion.div>
             ))}
@@ -560,7 +562,7 @@ export default function Home() {
             <p className="text-muted-foreground mt-2">Real photos from real tours — no filters, no stock images.</p>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-3 auto-rows-[160px]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
             {GALLERY_IMGS.map((img, i) => (
               <motion.div
                 key={i}
@@ -568,7 +570,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }}
-                className={`relative rounded-2xl overflow-hidden group cursor-pointer ${img.span}`}
+                className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer"
               >
                 <img
                   src={img.src}
@@ -576,8 +578,8 @@ export default function Home() {
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                  <span className="text-white font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1 rounded-full">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end justify-start p-3">
+                  <span className="text-white font-medium text-xs opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 px-2.5 py-1 rounded-full">
                     {img.alt}
                   </span>
                 </div>

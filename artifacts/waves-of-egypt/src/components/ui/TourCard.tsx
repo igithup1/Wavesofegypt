@@ -27,17 +27,18 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4, delay: index * 0.07 }}
-        className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border/50 w-72 shrink-0"
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        whileTap={{ scale: 0.98 }}
+        className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-border/50 w-72 shrink-0"
       >
-        {/* Image */}
-        <div className="relative h-48 overflow-hidden">
+        {/* Image — locked 16:9 */}
+        <div className="relative aspect-[16/9] overflow-hidden">
           <img
             src={tour.coverImage}
             alt={tour.title}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             {tour.isBestSeller && (
               <span className="bg-accent text-accent-foreground px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full shadow">
@@ -91,11 +92,10 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
               </div>
             </div>
 
-            {/* Dual CTAs */}
             <div className="flex gap-2">
               <Link
                 href={`/tours/${tour.id}`}
-                className="flex-1 text-center bg-accent text-accent-foreground hover:bg-accent/90 text-sm font-semibold py-2 rounded-xl transition-colors z-10 relative"
+                className="flex-1 text-center bg-accent text-accent-foreground hover:bg-accent/90 text-sm font-semibold py-2.5 rounded-xl transition-colors z-10 relative"
                 onClick={(e) => e.stopPropagation()}
               >
                 Book Now
@@ -123,11 +123,13 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.5, delay: index * 0.08 }}
-      className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border/50"
+      transition={{ duration: 0.45, delay: index * 0.07 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
+      className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-border/50"
     >
-      {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      {/* Image — locked 16:9 */}
+      <div className="relative aspect-[16/9] overflow-hidden">
         <img
           src={tour.coverImage}
           alt={tour.title}
@@ -153,7 +155,7 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
         </div>
       </div>
 
-      {/* Body */}
+      {/* Body — flex col so footer always at bottom */}
       <div className="p-4 flex flex-col flex-1">
         <p className="text-xs text-muted-foreground mb-1">{tour.categoryName}</p>
         <h3 className="font-semibold text-base leading-snug mb-2 text-foreground line-clamp-2">
@@ -177,6 +179,7 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
           </div>
         )}
 
+        {/* Pushes price + buttons to the bottom */}
         <div className="mt-auto pt-3 border-t border-border">
           <div className="mb-3">
             <span className="text-xs text-muted-foreground">From</span>
@@ -193,11 +196,10 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
             </div>
           </div>
 
-          {/* Dual CTAs */}
           <div className="flex gap-2">
             <Link
               href={`/tours/${tour.id}`}
-              className="flex-1 text-center bg-accent text-accent-foreground hover:bg-accent/90 text-sm font-semibold py-2 rounded-xl transition-colors"
+              className="flex-1 text-center bg-accent text-accent-foreground hover:bg-accent/90 text-sm font-semibold py-2.5 rounded-xl transition-colors"
             >
               Book Now
             </Link>

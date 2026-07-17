@@ -131,6 +131,41 @@ export default function TourDetail() {
 
   return (
     <Layout>
+      {/* ── Sticky mobile booking bar (bottom) ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-card/97 backdrop-blur-md border-t border-border shadow-2xl">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground">From</p>
+            <div className="flex items-baseline gap-1.5">
+              {tour.discountPrice ? (
+                <>
+                  <span className="text-xs line-through text-muted-foreground">${tour.price}</span>
+                  <span className="text-lg font-bold">${tour.discountPrice}</span>
+                </>
+              ) : (
+                <span className="text-lg font-bold">${tour.price}</span>
+              )}
+              <span className="text-xs text-muted-foreground">/ person</span>
+            </div>
+          </div>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-11 h-11 rounded-xl border border-green-300 bg-green-50 hover:bg-green-100 text-green-700 shrink-0"
+            title="Book via WhatsApp"
+          >
+            <MessageCircle className="w-5 h-5" />
+          </a>
+          <Link
+            href={`/checkout/${tour.id}`}
+            className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-sm px-5 py-3 rounded-xl transition-colors shrink-0"
+          >
+            Book Now
+          </Link>
+        </div>
+      </div>
+
       {/* Breadcrumb */}
       <div className="pt-24 pb-0 bg-muted/30 border-b border-border">
         <div className="container mx-auto px-4 md:px-6 py-3 text-sm text-muted-foreground flex items-center gap-2">
@@ -165,7 +200,7 @@ export default function TourDetail() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 py-10">
+      <div className="container mx-auto px-4 md:px-6 py-10 pb-28 lg:pb-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
           {/* LEFT COLUMN */}
