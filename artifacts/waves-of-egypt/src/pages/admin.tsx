@@ -92,10 +92,32 @@ export default function AdminDashboard() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: allBookings, isLoading: isBookingsLoading, refetch: refetchBookings } = useListBookings(
+  const { data: allBookings, isLoading: isBookingsLoading, refetch: refetchBookings, dataUpdatedAt } = useListBookings(
     { limit },
-    { query: { enabled: !!user && user.role === 'admin' } as any }
+    {
+      query: {
+        enabled: !!user && user.role === 'admin',
+        // Auto-poll every 30 s while an active tab that shows bookings is open
+        refetchInterval: (activeTab === 'overview' || activeTab === 'bookings' || activeTab === 'tours') ? 30_000 : false,
+        refetchIntervalInBackground: false,
+      } as any,
+    }
   );
+
+  // Tick every second so the "Last updated X s ago" label stays live
+  const [, tick] = React.useReducer((n: number) => n + 1, 0);
+  React.useEffect(() => {
+    const id = setInterval(tick, 1_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const secondsAgo = dataUpdatedAt ? Math.floor((Date.now() - dataUpdatedAt) / 1_000) : null;
+  const lastUpdatedLabel = (() => {
+    if (secondsAgo === null) return null;
+    if (secondsAgo < 5) return 'just now';
+    if (secondsAgo < 60) return `${secondsAgo}s ago`;
+    return `${Math.floor(secondsAgo / 60)}m ago`;
+  })();
 
   React.useEffect(() => {
     if (!isAuthLoading) {
@@ -381,7 +403,7 @@ export default function AdminDashboard() {
                 </button>
               )}
 
-              <div className="ml-auto flex items-end">
+              <div className="ml-auto flex flex-col items-end gap-1">
                 <button
                   onClick={() => refetchBookings()}
                   disabled={isBookingsLoading}
@@ -390,6 +412,11 @@ export default function AdminDashboard() {
                   <RefreshCw className={`w-3.5 h-3.5 ${isBookingsLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
+                {lastUpdatedLabel && (
+                  <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
+                    Updated {lastUpdatedLabel}
+                  </span>
+                )}
               </div>
             </div>
 
