@@ -33,11 +33,10 @@ export interface BookingEmailData {
   totalPrice: number;
 }
 
-export async function sendBookingConfirmationEmail(data: BookingEmailData): Promise<void> {
-  const transport = createTransport();
-  if (!transport) return;
+// ── Shared email-content builders ─────────────────────────────────────────────
 
-  const whatsappMsg = encodeURIComponent(
+function buildWhatsappUrl(data: BookingEmailData): string {
+  const msg = encodeURIComponent(
     `Hi! I just booked "${data.tourName}" on WavesOfEgypt.\n` +
     `📋 Booking Ref: ${data.bookingRef}\n` +
     `📅 Date: ${data.date}\n` +
@@ -45,7 +44,11 @@ export async function sendBookingConfirmationEmail(data: BookingEmailData): Prom
     `💰 Total: $${data.totalPrice}\n\n` +
     `Looking forward to the experience!`
   );
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMsg}`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+}
+
+function buildEmailContent(data: BookingEmailData): { html: string; text: string } {
+  const whatsappUrl = buildWhatsappUrl(data);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -186,6 +189,21 @@ export async function sendBookingConfirmationEmail(data: BookingEmailData): Prom
     `Connect with your guide on WhatsApp: ${whatsappUrl}\n\n` +
     `— The WavesOfEgypt Team`;
 
+  return { html, text };
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Sends a booking confirmation email.
+ * Silently skips when SMTP is not configured and swallows transport errors so
+ * that email failures never break the booking API response.
+ */
+export async function sendBookingConfirmationEmail(data: BookingEmailData): Promise<void> {
+  const transport = createTransport();
+  if (!transport) return;
+
+  const { html, text } = buildEmailContent(data);
   try {
     await transport.sendMail({
       from: `"WavesOfEgypt Bookings" <${FROM_ADDRESS}>`,
@@ -199,4 +217,31 @@ export async function sendBookingConfirmationEmail(data: BookingEmailData): Prom
     logger.error({ err, bookingRef: data.bookingRef }, "Failed to send booking confirmation email");
     // Don't rethrow — email failure should not break the booking response
   }
+}
+
+/**
+ * Sends a booking confirmation email and THROWS on any failure.
+ *
+ * Use this when the caller must know whether delivery actually succeeded —
+ * for example the admin test-email endpoint. Unlike sendBookingConfirmationEmail:
+ * - Throws if SMTP is not configured
+ * - Re-throws transport errors so the caller receives the real failure reason
+ */
+export async function sendBookingConfirmationEmailStrict(data: BookingEmailData): Promise<void> {
+  const transport = createTransport();
+  if (!transport) {
+    throw new Error("SMTP not configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
+  }
+
+  const { html, text } = buildEmailContent(data);
+
+  // Intentionally let transport errors propagate to the caller
+  await transport.sendMail({
+    from: `"WavesOfEgypt Bookings" <${FROM_ADDRESS}>`,
+    to: data.travelerEmail,
+    subject: `✅ Booking Confirmed — ${data.bookingRef}`,
+    text,
+    html,
+  });
+  logger.info({ bookingRef: data.bookingRef, to: data.travelerEmail }, "Booking confirmation email sent (strict)");
 }

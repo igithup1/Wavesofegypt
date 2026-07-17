@@ -3,14 +3,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGetAdminDashboard, useListBookings, useUpdateBooking } from '@workspace/api-client-react';
 import Layout from '@/components/layout/Layout';
 import { Link, useLocation } from 'wouter';
-import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3 } from 'lucide-react';
+import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send } from 'lucide-react';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListBookingsQueryKey } from '@workspace/api-client-react';
 import type { Booking } from '@workspace/api-client-react';
 
 type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
-type TabKey = 'overview' | 'bookings' | 'tours';
+type TabKey = 'overview' | 'bookings' | 'tours' | 'email';
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Pending',
@@ -172,6 +172,7 @@ export default function AdminDashboard() {
     { key: 'overview', label: 'Overview', icon: <Activity className="w-4 h-4" /> },
     { key: 'bookings', label: `Bookings${allBookings ? ` (${allBookings.length})` : ''}`, icon: <CreditCard className="w-4 h-4" /> },
     { key: 'tours',    label: 'By Tour',  icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'email',    label: 'Email',    icon: <Mail className="w-4 h-4" /> },
   ];
 
   return (
@@ -596,7 +597,163 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+        {/* ── EMAIL SETTINGS TAB ── */}
+        {activeTab === 'email' && (
+          <EmailSettingsPanel adminEmail={user?.email ?? ''} />
+        )}
+
       </div>
     </Layout>
+  );
+}
+
+// ── Email Settings Panel ──────────────────────────────────────────────────────
+
+interface SmtpStatus {
+  configured: boolean;
+  smtpHost: string | null;
+  smtpUser: string | null;
+  smtpPort: string;
+  smtpFrom: string;
+  sentTo?: string;
+  message?: string;
+  error?: string;
+}
+
+function EmailSettingsPanel({ adminEmail }: { adminEmail: string }) {
+  const [status, setStatus] = React.useState<SmtpStatus | null>(null);
+  const [isSending, setIsSending] = React.useState(false);
+  const [result, setResult] = React.useState<{ ok: boolean; message: string } | null>(null);
+
+  // Load SMTP status on mount by calling the test endpoint in dry-run mode
+  React.useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    fetch('/api/admin/email-status', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => r.json())
+      .then((data: SmtpStatus) => setStatus(data))
+      .catch(() => setStatus(null));
+  }, []);
+
+  const handleSendTest = async () => {
+    setIsSending(true);
+    setResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const resp = await fetch('/api/admin/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setResult({ ok: true, message: data.message ?? `Test email sent to ${data.sentTo}.` });
+        setStatus(data);
+      } else {
+        setResult({ ok: false, message: data.error ?? 'Failed to send test email.' });
+        setStatus(data);
+      }
+    } catch {
+      setResult({ ok: false, message: 'Network error — could not reach the server.' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const isConfigured = status?.configured ?? false;
+
+  return (
+    <div className="max-w-2xl">
+      <div className="mb-6">
+        <h2 className="text-2xl font-serif font-bold mb-1">Email Configuration</h2>
+        <p className="text-muted-foreground text-sm">
+          Booking confirmation emails are sent via SMTP. Use the test below to verify delivery is working.
+        </p>
+      </div>
+
+      {/* Status card */}
+      <div className={`rounded-2xl border p-6 mb-6 ${isConfigured ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+        <div className="flex items-start gap-4">
+          {isConfigured
+            ? <CheckCircle2 className="w-6 h-6 text-emerald-600 mt-0.5 shrink-0" />
+            : <XCircle className="w-6 h-6 text-amber-500 mt-0.5 shrink-0" />
+          }
+          <div>
+            <p className={`font-semibold text-sm ${isConfigured ? 'text-emerald-800' : 'text-amber-800'}`}>
+              {isConfigured ? 'SMTP is configured — emails will send' : 'SMTP is not fully configured'}
+            </p>
+            <p className={`text-xs mt-1 ${isConfigured ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {isConfigured
+                ? 'All required credentials are present. Click "Send test email" to confirm delivery.'
+                : 'Set SMTP_HOST, SMTP_USER, and SMTP_PASS in the Replit Secrets panel to enable emails.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Config details */}
+      {status && (
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-6 mb-6">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Current settings</h3>
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground mb-0.5">SMTP Host</dt>
+              <dd className="font-mono font-medium">{status.smtpHost ?? <span className="text-destructive italic">not set</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground mb-0.5">SMTP Port</dt>
+              <dd className="font-mono font-medium">{status.smtpPort}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground mb-0.5">SMTP User</dt>
+              <dd className="font-mono font-medium">{status.smtpUser ?? <span className="text-destructive italic">not set</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground mb-0.5">From Address</dt>
+              <dd className="font-mono font-medium">{status.smtpFrom}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground mb-0.5">Password</dt>
+              <dd className="font-medium">{status.configured ? '••••••••' : <span className="text-destructive italic">not set</span>}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {/* Send test button */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+        <h3 className="text-sm font-semibold mb-1">Send a test email</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sends a sample booking confirmation to <span className="font-medium text-foreground">{adminEmail}</span>.
+        </p>
+        <button
+          onClick={handleSendTest}
+          disabled={isSending || !isConfigured}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Send className={`w-4 h-4 ${isSending ? 'animate-pulse' : ''}`} />
+          {isSending ? 'Sending…' : 'Send test email'}
+        </button>
+
+        {!isConfigured && (
+          <p className="text-xs text-muted-foreground mt-3">
+            Configure SMTP credentials above to enable test sending.
+          </p>
+        )}
+
+        {result && (
+          <div className={`mt-4 flex items-start gap-3 p-4 rounded-xl border text-sm ${result.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            {result.ok
+              ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
+              : <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+            }
+            {result.message}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

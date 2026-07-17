@@ -9,6 +9,7 @@ import {
   ListUsersResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthRequest } from "../lib/auth";
+import { sendBookingConfirmationEmailStrict } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -126,6 +127,101 @@ router.get("/admin/users", requireAuth, async (req, res): Promise<void> => {
     id: u.id, email: u.email, name: u.name, role: u.role as "customer" | "vendor" | "admin",
     avatar: u.avatar, phone: u.phone, createdAt: u.createdAt.toISOString(),
   }))));
+});
+
+/**
+ * GET /admin/email-status
+ * Returns the current SMTP configuration status without sending any email.
+ * Admin-only.
+ */
+router.get("/admin/email-status", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthRequest).user;
+  if (user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpPort = process.env.SMTP_PORT ?? "587";
+  const smtpFrom = process.env.SMTP_FROM ?? "bookings@wavesofegypt.com";
+
+  res.json({
+    configured: Boolean(smtpHost && smtpUser && smtpPass),
+    smtpHost: smtpHost ?? null,
+    smtpUser: smtpUser ?? null,
+    smtpPort,
+    smtpFrom,
+  });
+});
+
+/**
+ * POST /admin/test-email
+ * Sends a test booking confirmation email to the logged-in admin's address.
+ * Returns the current SMTP configuration status (without revealing the password).
+ * Admin-only.
+ */
+router.post("/admin/test-email", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthRequest).user;
+  if (user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpPort = process.env.SMTP_PORT ?? "587";
+  const smtpFrom = process.env.SMTP_FROM ?? "bookings@wavesofegypt.com";
+
+  const configured = Boolean(smtpHost && smtpUser && smtpPass);
+
+  if (!configured) {
+    res.status(422).json({
+      configured: false,
+      smtpHost: smtpHost ?? null,
+      smtpUser: smtpUser ?? null,
+      smtpPort,
+      smtpFrom,
+      error: "SMTP credentials are not fully configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS.",
+    });
+    return;
+  }
+
+  // Use the strict variant so transport failures propagate as real errors
+  try {
+    await sendBookingConfirmationEmailStrict({
+      travelerName: user.name ?? "Admin",
+      travelerEmail: user.email,
+      bookingRef: "TEST-00000",
+      tourName: "Test Tour — Email Configuration Check",
+      date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+      participants: 1,
+      totalPrice: 0,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown SMTP error";
+    res.status(500).json({
+      configured: true,
+      smtpHost,
+      smtpUser,
+      smtpPort,
+      smtpFrom,
+      error: `Email delivery failed: ${message}`,
+    });
+    return;
+  }
+
+  res.json({
+    configured: true,
+    smtpHost,
+    smtpUser,
+    smtpPort,
+    smtpFrom,
+    sentTo: user.email,
+    message: `Test email sent to ${user.email}. Check your inbox.`,
+  });
 });
 
 export default router;
