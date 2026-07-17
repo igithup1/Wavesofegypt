@@ -105,6 +105,7 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.get("/bookings/:id", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthRequest).user;
   const params = GetBookingParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -114,6 +115,12 @@ router.get("/bookings/:id", requireAuth, async (req, res): Promise<void> => {
   const [booking] = await db.select().from(bookingsTable).where(eq(bookingsTable.id, params.data.id));
   if (!booking) {
     res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  // Customers can only access their own bookings; admins and vendors can access all
+  if (user.role === "customer" && booking.userId !== user.id) {
+    res.status(403).json({ error: "You do not have permission to view this booking" });
     return;
   }
 

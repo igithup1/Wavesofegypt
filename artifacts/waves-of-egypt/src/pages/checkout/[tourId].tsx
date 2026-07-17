@@ -56,9 +56,9 @@ export default function Checkout() {
         } 
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           toast.success('Booking confirmed successfully!');
-          setLocation('/dashboard');
+          setLocation(`/booking-confirmation?id=${data.id}`);
         },
         onError: (error) => {
           toast.error(error.error || 'Failed to complete booking');

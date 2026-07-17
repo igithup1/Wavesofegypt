@@ -12,6 +12,7 @@ import Tours from '@/pages/tours';
 import TourDetail from '@/pages/tours/[id]';
 import CategoryDetail from '@/pages/categories/[slug]';
 import Checkout from '@/pages/checkout/[tourId]';
+import BookingConfirmation from '@/pages/booking-confirmation';
 import Login from '@/pages/login';
 import Register from '@/pages/register';
 import Dashboard from '@/pages/dashboard';
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/tours/:id" component={TourDetail} />
       <Route path="/categories/:slug" component={CategoryDetail} />
       <Route path="/checkout/:tourId" component={Checkout} />
+      <Route path="/booking-confirmation" component={BookingConfirmation} />
       
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
