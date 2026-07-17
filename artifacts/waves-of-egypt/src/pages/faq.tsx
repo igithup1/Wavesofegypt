@@ -1,5 +1,6 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import {
   Accordion,
   AccordionContent,
@@ -8,6 +9,11 @@ import {
 } from "@/components/ui/accordion";
 
 export default function FAQ() {
+  usePageMeta({
+    title: 'Frequently Asked Questions',
+    description: 'Answers to common questions about booking tours with WavesOfEgypt — cancellation policy, payment, group sizes, safety, and more.',
+    canonical: '/faq',
+  });
   return (
     <Layout>
       <div className="bg-primary pt-32 pb-16 text-primary-foreground">

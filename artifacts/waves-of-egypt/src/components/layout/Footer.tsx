@@ -87,7 +87,7 @@ export default function Footer() {
                 ['Contact', '/contact'],
                 ['FAQ', '/faq'],
                 ['Travel Blog', '/blog'],
-                ['Become a Partner', '/vendor/register'],
+                ['Become a Partner', '/contact'],
                 ['Terms of Service', '/terms'],
                 ['Privacy Policy', '/privacy'],
               ].map(([label, href]) => (

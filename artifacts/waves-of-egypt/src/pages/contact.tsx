@@ -1,5 +1,6 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +9,11 @@ import { MapPin, Phone, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Contact() {
+  usePageMeta({
+    title: 'Contact Us',
+    description: 'Get in touch with the WavesOfEgypt team. We\'re available 24/7 via WhatsApp and email to help you plan your perfect Red Sea experience.',
+    canonical: '/contact',
+  });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Message sent successfully. We'll get back to you soon!");

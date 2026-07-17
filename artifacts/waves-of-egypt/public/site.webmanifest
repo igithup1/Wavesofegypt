@@ -1,0 +1,16 @@
+{
+  "name": "WavesOfEgypt",
+  "short_name": "WavesOfEgypt",
+  "description": "Hurghada tours & Red Sea experiences",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A3D5C",
+  "theme_color": "#0A3D5C",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

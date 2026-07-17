@@ -1,0 +1,189 @@
+أنا هكتب لك برومبت احترافي أخير. هذا البرومبت ليس لإضافة مميزات، وإنما لتحويل المشروع إلى نسخة Production Ready قبل نقله إلى الاستضافة.
+
+
+---
+
+Excellent work.
+
+The website has reached a mature stage and is very close to production.
+
+Before we migrate to a new hosting provider, I want you to perform a complete Production Readiness Review.
+
+Do NOT add unnecessary features or redesign the website.
+
+Your task is to inspect, optimize and polish the entire project.
+
+## 1. Quality Assurance
+
+Review every page and fix:
+
+- Broken links
+- Missing images
+- Layout issues
+- Mobile responsiveness
+- Tablet responsiveness
+- Desktop responsiveness
+- UI inconsistencies
+- Typography
+- Button alignment
+- Spacing
+- Color consistency
+
+Everything should feel polished and professional.
+
+---
+
+## 2. Performance
+
+Optimize the website for speed.
+
+- Compress images
+- Convert images to WebP where appropriate
+- Lazy-load images
+- Optimize JavaScript
+- Optimize CSS
+- Remove unused code
+- Improve Lighthouse Performance
+
+The website should load extremely fast.
+
+---
+
+## 3. SEO
+
+Prepare the website for Google.
+
+Implement:
+
+- Unique Title for every page
+- Meta Description
+- Open Graph Tags
+- Twitter Cards
+- Canonical URLs
+- Structured Data (Schema.org)
+- robots.txt
+- sitemap.xml
+- Favicon package
+- Proper heading hierarchy (H1-H6)
+
+---
+
+## 4. Security
+
+Prepare the website for production.
+
+- HTTPS ready
+- Security headers
+- Input validation
+- Rate limiting where applicable
+- Error handling
+- Proper 404 page
+- Proper 500 error page
+
+---
+
+## 5. Analytics
+
+Prepare analytics integration.
+
+Add placeholders for:
+
+- Google Analytics 4
+- Google Search Console
+- Meta Pixel
+
+Do not hardcode tracking IDs.
+
+---
+
+## 6. Contact & Trust
+
+Review and complete:
+
+- Contact page
+- Privacy Policy
+- Terms & Conditions
+- Cookie Notice (if required)
+- About Us
+
+Make sure all pages are linked correctly.
+
+---
+
+## 7. Booking Flow
+
+Test the complete booking experience.
+
+Homepage
+
+↓
+
+Categories
+
+↓
+
+Tour Details
+
+↓
+
+WhatsApp Booking
+
+Every button should work correctly.
+
+The WhatsApp message should include the selected tour automatically.
+
+---
+
+## 8. Final Code Review
+
+Clean the project.
+
+Remove:
+
+- Dead code
+- Unused components
+- Debug logs
+- Test data
+- Placeholder content
+
+Organize folders and files.
+
+Improve maintainability.
+
+---
+
+## 9. Hosting Preparation
+
+Prepare the project for deployment outside Replit.
+
+Ensure there are no Replit-specific dependencies that would prevent deployment on Vercel, Netlify or a VPS.
+
+The project should be production-ready and easily deployable.
+
+---
+
+## Final Goal
+
+Do not create new features.
+
+Do not redesign the website.
+
+Your mission is to make the website stable, secure, fast, SEO-friendly, polished and ready for production deployment.
+
+Think like a Senior QA Engineer, Senior Frontend Engineer and Senior DevOps Engineer preparing a commercial travel marketplace for launch.
+
+وبعد ما يخلص ده...
+
+لا تطلب منه أي تطوير جديد داخل Replit.
+
+وقتها انقل المشروع إلى استضافة احترافية (مثل Vercel إذا كان الموقع React/Vite، أو أي استضافة مناسبة)، واربط wavesofegypt.com، ثم نبدأ مرحلة ما بعد الإطلاق:
+
+تحسين SEO بالمحتوى.
+
+متابعة الزوار.
+
+إضافة ميزات مثل My Trip أو الدفع الإلكتروني تدريجيًا.
+
+
+في رأيي، دي أفضل نقطة توقف للتطوير على Replit والانتقال إلى بيئة إنتاج حقيقية.
+

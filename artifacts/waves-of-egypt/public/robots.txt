@@ -1,2 +1,15 @@
 User-agent: *
 Allow: /
+
+# Block admin and private routes from indexing
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /vendor
+Disallow: /checkout/
+Disallow: /booking-confirmation
+Disallow: /login
+Disallow: /register
+Disallow: /wishlist
+
+# Sitemap location
+Sitemap: https://wavesofegypt.com/sitemap.xml

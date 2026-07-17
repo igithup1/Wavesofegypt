@@ -2,20 +2,127 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>WavesOfEgypt</title>
-    <meta name="description" content="WavesOfEgypt — built on Replit. Update this description to reflect the app." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         PRIMARY SEO
+         ════════════════════════════════════════════════════ -->
+    <title>WavesOfEgypt — Hurghada Tours & Red Sea Experiences</title>
+    <meta name="description" content="Book snorkeling, diving, island trips, desert safaris and more in Hurghada, Egypt. Verified operators, instant WhatsApp booking, free cancellation. 5,000+ happy travelers." />
+    <meta name="keywords" content="Hurghada tours, Red Sea snorkeling, Egypt diving trips, Giftun Island, desert safari Hurghada, book tours Egypt, WavesOfEgypt" />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="WavesOfEgypt" />
-    <meta property="og:description" content="WavesOfEgypt — built on Replit. Update this description to reflect the app." />
+    <meta name="author" content="WavesOfEgypt" />
+    <link rel="canonical" href="https://wavesofegypt.com/" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         OPEN GRAPH
+         ════════════════════════════════════════════════════ -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WavesOfEgypt" />
+    <meta property="og:url" content="https://wavesofegypt.com/" />
+    <meta property="og:title" content="WavesOfEgypt — Hurghada Tours & Red Sea Experiences" />
+    <meta property="og:description" content="Book snorkeling, diving, island trips, desert safaris and more in Hurghada, Egypt. Verified operators, instant WhatsApp booking, free cancellation." />
+    <meta property="og:image" content="https://wavesofegypt.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WavesOfEgypt — Red Sea tours from Hurghada" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         TWITTER CARDS
+         ════════════════════════════════════════════════════ -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="WavesOfEgypt" />
-    <meta name="twitter:description" content="WavesOfEgypt — built on Replit. Update this description to reflect the app." />
+    <meta name="twitter:site" content="@wavesofegypt" />
+    <meta name="twitter:title" content="WavesOfEgypt — Hurghada Tours & Red Sea Experiences" />
+    <meta name="twitter:description" content="Book snorkeling, diving, island trips, desert safaris and more in Hurghada. Verified operators, free cancellation." />
+    <meta name="twitter:image" content="https://wavesofegypt.com/og-image.jpg" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         FAVICONS
+         ════════════════════════════════════════════════════ -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0A3D5C" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         FONTS
+         ════════════════════════════════════════════════════ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;700;800&display=swap" rel="stylesheet" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         STRUCTURED DATA — TravelAgency (Schema.org)
+         ════════════════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      "name": "WavesOfEgypt",
+      "url": "https://wavesofegypt.com",
+      "logo": "https://wavesofegypt.com/favicon.svg",
+      "description": "Hurghada's #1 tour marketplace — snorkeling, diving, island trips, desert safaris and more on the Red Sea.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Hurghada",
+        "addressRegion": "Red Sea Governorate",
+        "addressCountry": "EG"
+      },
+      "telephone": "+201001234567",
+      "email": "info@wavesofegypt.com",
+      "sameAs": [
+        "https://www.facebook.com/wavesofegypt",
+        "https://www.instagram.com/wavesofegypt"
+      ],
+      "priceRange": "$$",
+      "openingHours": "Mo-Su 00:00-23:59",
+      "currenciesAccepted": "USD, EUR, EGP",
+      "paymentAccepted": "Cash, WhatsApp booking"
+    }
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ANALYTICS PLACEHOLDERS
+         To activate: replace the placeholder IDs below and
+         uncomment the relevant script blocks.
+         ════════════════════════════════════════════════════ -->
+
+    <!-- Google Analytics 4
+         Replace G-XXXXXXXXXX with your Measurement ID from
+         https://analytics.google.com → Admin → Data Streams
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    -->
+
+    <!-- Google Search Console Verification
+         Replace content value with your verification token from
+         https://search.google.com/search-console
+    <meta name="google-site-verification" content="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
+    -->
+
+    <!-- Meta Pixel (Facebook)
+         Replace YOUR_PIXEL_ID with your Pixel ID from
+         https://business.facebook.com → Events Manager
+    <script>
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', 'YOUR_PIXEL_ID');
+      fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1" /></noscript>
+    -->
   </head>
   <body>
     <div id="root"></div>
