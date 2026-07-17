@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm run build && node --test src/tests/booking-auth.test.mjs src/tests/booking-email.test.mjs"
+    "test": "pnpm run build && node --test src/tests/booking-auth.test.mjs src/tests/booking-email.test.mjs",
+    "vercel-build": "cd ../.. && pnpm --filter @workspace/waves-of-egypt run build && mkdir -p artifacts/api-server/dist && cp -r artifacts/waves-of-egypt/dist/public/. artifacts/api-server/dist/"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
