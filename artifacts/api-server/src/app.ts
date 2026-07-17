@@ -42,7 +42,21 @@ app.use(
 );
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
-app.use(cors());
+// CORS_ORIGIN: comma-separated list of allowed origins for production.
+// Leave unset (or set to "*") to allow all origins (fine for development).
+// Example: CORS_ORIGIN=https://wavesofegypt.vercel.app,https://yourdomain.com
+const rawCorsOrigin = process.env["CORS_ORIGIN"];
+const corsOrigin: string | string[] | boolean =
+  !rawCorsOrigin || rawCorsOrigin === "*"
+    ? true                              // allow all
+    : rawCorsOrigin.split(",").map((o) => o.trim());
+
+app.use(
+  cors({
+    origin: corsOrigin,
+    credentials: true,                  // allow cookies / Authorization header
+  }),
+);
 
 // ─── Body Parsers ───────────────────────────────────────────────────────────
 app.use(express.json({ limit: "1mb" }));

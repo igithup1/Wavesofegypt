@@ -4,6 +4,13 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { setBaseUrl } from '@workspace/api-client-react';
+
+// When the web app is deployed separately from the API server (e.g. Vercel +
+// Railway), set VITE_API_URL to the API server's public URL so all API calls
+// are routed there instead of using relative paths.
+const apiUrl = import.meta.env.VITE_API_URL;
+if (apiUrl) setBaseUrl(apiUrl);
 
 // Eagerly load the home page — it's the first thing users see.
 import Home from '@/pages/home';

@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pnpm --filter @workspace/waves-of-egypt run build",
+  "outputDirectory": "artifacts/waves-of-egypt/dist/public",
+  "installCommand": "pnpm install",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
