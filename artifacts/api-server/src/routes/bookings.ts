@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, sum, ne, sql } from "drizzle-orm";
+import { eq, and, desc, sum, ne, sql, gte, lte } from "drizzle-orm";
 import { db, bookingsTable, toursTable, usersTable } from "@workspace/db";
 import {
   ListBookingsQueryParams,
@@ -43,11 +43,13 @@ router.get("/bookings", requireAuth, async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
   const query = ListBookingsQueryParams.safeParse(req.query);
   const params = query.success ? query.data : {};
-  const limit = params.limit ? Number(params.limit) : 20;
+  const limit = params.limit ? Number(params.limit) : 25;
   const offset = params.offset ? Number(params.offset) : 0;
 
   const conditions = user.role === "customer" ? [eq(bookingsTable.userId, user.id)] : [];
   if (params.status) conditions.push(eq(bookingsTable.status, params.status));
+  if (params.dateFrom) conditions.push(gte(bookingsTable.date, params.dateFrom));
+  if (params.dateTo) conditions.push(lte(bookingsTable.date, params.dateTo));
 
   const bookings = await db
     .select()

@@ -9,6 +9,8 @@ import type { ListBookingsStatus } from './listBookingsStatus';
 
 export type ListBookingsParams = {
 status?: ListBookingsStatus;
+dateFrom?: string;
+dateTo?: string;
 limit?: number;
 offset?: number;
 };

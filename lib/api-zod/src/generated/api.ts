@@ -654,6 +654,8 @@ export const CreateReviewResponse = zod.object({
  */
 export const ListBookingsQueryParams = zod.object({
   "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']).optional(),
+  "dateFrom": zod.string().optional(),
+  "dateTo": zod.string().optional(),
   "limit": zod.coerce.number().optional(),
   "offset": zod.coerce.number().optional()
 })

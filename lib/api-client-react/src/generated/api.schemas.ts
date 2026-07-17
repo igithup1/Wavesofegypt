@@ -468,6 +468,8 @@ offset?: number;
 
 export type ListBookingsParams = {
 status?: ListBookingsStatus;
+dateFrom?: string;
+dateTo?: string;
 limit?: number;
 offset?: number;
 };

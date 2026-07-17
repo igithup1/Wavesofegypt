@@ -4,7 +4,7 @@ import { useGetAdminDashboard, useListBookings, useUpdateBooking } from '@worksp
 import Layout from '@/components/layout/Layout';
 import { Link, useLocation } from 'wouter';
 import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send } from 'lucide-react';
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListBookingsQueryKey } from '@workspace/api-client-react';
 import type { Booking } from '@workspace/api-client-react';
@@ -84,22 +84,44 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = React.useState<BookingStatus | 'all'>('all');
   const [dateFrom, setDateFrom] = React.useState('');
   const [dateTo, setDateTo] = React.useState('');
-  const [limit] = React.useState(100);
+  const [page, setPage] = React.useState(0);
+  const PAGE_SIZE = 25;
+
+  // Reset to page 0 when filters change
+  React.useEffect(() => { setPage(0); }, [statusFilter, dateFrom, dateTo]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: dashboard, isLoading: isDashLoading } = useGetAdminDashboard({
     query: { enabled: !!user && user.role === 'admin' } as any,
   });
 
+  // Paginated bookings query — uses server-side date + status filtering
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: allBookings, isLoading: isBookingsLoading, refetch: refetchBookings, dataUpdatedAt } = useListBookings(
-    { limit },
+    {
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    },
     {
       query: {
         enabled: !!user && user.role === 'admin',
         // Auto-poll every 30 s while an active tab that shows bookings is open
         refetchInterval: (activeTab === 'overview' || activeTab === 'bookings' || activeTab === 'tours') ? 30_000 : false,
         refetchIntervalInBackground: false,
+      } as any,
+    }
+  );
+
+  // Separate unfiltered query for the tours breakdown tab (no date/status filter)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: allBookingsForTours, isLoading: isToursLoading } = useListBookings(
+    { limit: 500 },
+    {
+      query: {
+        enabled: !!user && user.role === 'admin' && activeTab === 'tours',
       } as any,
     }
   );
@@ -131,39 +153,16 @@ export default function AdminDashboard() {
     refetchBookings();
   }, [queryClient, refetchBookings]);
 
-  // Client-side filtering
-  const filteredBookings = React.useMemo<Booking[]>(() => {
-    if (!allBookings) return [];
-    let result = allBookings as Booking[];
+  // Server-side filtering is applied via query params; allBookings is already filtered
+  const filteredBookings = (allBookings ?? []) as Booking[];
+  const isLastPage = filteredBookings.length < PAGE_SIZE;
 
-    if (statusFilter !== 'all') {
-      result = result.filter(b => b.status === statusFilter);
-    }
-
-    if (dateFrom) {
-      const from = startOfDay(parseISO(dateFrom));
-      result = result.filter(b => {
-        const d = new Date(b.date);
-        return d >= from;
-      });
-    }
-
-    if (dateTo) {
-      const to = endOfDay(parseISO(dateTo));
-      result = result.filter(b => {
-        const d = new Date(b.date);
-        return d <= to;
-      });
-    }
-
-    return result;
-  }, [allBookings, statusFilter, dateFrom, dateTo]);
-
-  // Booking counts per tour
+  // Booking counts per tour — uses the separate unfiltered query for accuracy
   const tourBreakdown = React.useMemo(() => {
-    if (!allBookings) return [];
+    const source = (allBookingsForTours ?? []) as Booking[];
+    if (source.length === 0) return [];
     const map: Record<string, { tourId: number; tourTitle: string; counts: Record<string, number>; total: number; revenue: number }> = {};
-    (allBookings as Booking[]).forEach(b => {
+    source.forEach(b => {
       const key = String(b.tourId);
       if (!map[key]) {
         map[key] = { tourId: b.tourId, tourTitle: b.tourTitle ?? `Tour #${b.tourId}`, counts: {}, total: 0, revenue: 0 };
@@ -173,7 +172,7 @@ export default function AdminDashboard() {
       map[key].revenue += b.totalPrice;
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
-  }, [allBookings]);
+  }, [allBookingsForTours]);
 
   if (isAuthLoading || isDashLoading) {
     return (
@@ -192,7 +191,7 @@ export default function AdminDashboard() {
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <Activity className="w-4 h-4" /> },
-    { key: 'bookings', label: `Bookings${allBookings ? ` (${allBookings.length})` : ''}`, icon: <CreditCard className="w-4 h-4" /> },
+    { key: 'bookings', label: 'Bookings', icon: <CreditCard className="w-4 h-4" /> },
     { key: 'tours',    label: 'By Tour',  icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'email',    label: 'Email',    icon: <Mail className="w-4 h-4" /> },
   ];
@@ -396,7 +395,7 @@ export default function AdminDashboard() {
               {/* Clear */}
               {(statusFilter !== 'all' || dateFrom || dateTo) && (
                 <button
-                  onClick={() => { setStatusFilter('all'); setDateFrom(''); setDateTo(''); }}
+                  onClick={() => { setStatusFilter('all'); setDateFrom(''); setDateTo(''); setPage(0); }}
                   className="text-xs text-muted-foreground hover:text-foreground underline self-end pb-2"
                 >
                   Clear filters
@@ -423,9 +422,17 @@ export default function AdminDashboard() {
             {/* Results summary */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{filteredBookings.length}</span> booking{filteredBookings.length !== 1 ? 's' : ''}
-                {statusFilter !== 'all' && <span> · status: <span className="font-medium capitalize">{statusFilter}</span></span>}
-                {(dateFrom || dateTo) && <span> · date filtered</span>}
+                {isBookingsLoading ? (
+                  'Loading…'
+                ) : (
+                  <>
+                    Page <span className="font-semibold text-foreground">{page + 1}</span>
+                    {' · '}
+                    <span className="font-semibold text-foreground">{filteredBookings.length}</span> booking{filteredBookings.length !== 1 ? 's' : ''} on this page
+                    {statusFilter !== 'all' && <span> · status: <span className="font-medium capitalize">{statusFilter}</span></span>}
+                    {(dateFrom || dateTo) && <span> · date filtered</span>}
+                  </>
+                )}
               </p>
             </div>
 
@@ -497,34 +504,24 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Status summary pills */}
-            {allBookings && allBookings.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-3">
-                {(Object.keys(STATUS_LABELS) as BookingStatus[]).map(s => {
-                  const count = (allBookings as Booking[]).filter(b => b.status === s).length;
-                  if (count === 0) return null;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        statusFilter === s
-                          ? STATUS_COLORS[s] + ' ring-2 ring-offset-1 ring-primary/30'
-                          : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted/60'
-                      }`}
-                    >
-                      {STATUS_LABELS[s]}
-                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${statusFilter === s ? 'bg-white/50' : 'bg-muted'}`}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-                <span className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground">
-                  Total revenue: <span className="font-bold text-foreground">${(allBookings as Booking[]).reduce((s, b) => s + b.totalPrice, 0).toLocaleString()}</span>
-                </span>
-              </div>
-            )}
+            {/* Pagination controls */}
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0 || isBookingsLoading}
+                className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← Previous
+              </button>
+              <span className="text-sm text-muted-foreground">Page {page + 1}</span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={isLastPage || isBookingsLoading}
+                className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         )}
 
@@ -536,7 +533,7 @@ export default function AdminDashboard() {
               <p className="text-muted-foreground text-sm">How many bookings each tour has received, broken down by status</p>
             </div>
 
-            {isBookingsLoading ? (
+            {isToursLoading ? (
               <div className="p-12 flex items-center justify-center">
                 <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
@@ -596,7 +593,7 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4 text-right font-bold">${tour.revenue.toLocaleString()}</td>
                             <td className="px-6 py-4">
                               <button
-                                onClick={() => { setStatusFilter('all'); setDateFrom(''); setDateTo(''); setActiveTab('bookings'); }}
+                                onClick={() => { setStatusFilter('all'); setDateFrom(''); setDateTo(''); setPage(0); setActiveTab('bookings'); }}
                                 className="text-xs text-primary hover:underline whitespace-nowrap"
                               >
                                 View bookings →
