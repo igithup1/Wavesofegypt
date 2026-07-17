@@ -23,6 +23,20 @@ import { setTimeout as wait } from "node:timers/promises";
 let serverProcess;
 let BASE;
 
+/**
+ * Derive a unique future booking date from a timestamp-based suffix string.
+ * Avoids capacity conflicts when the same tour is booked repeatedly across
+ * many test runs.  The date is 365–729 days from today, keyed to the last
+ * millisecond digits of the suffix so consecutive runs land on different days.
+ */
+function uniqueFutureDate(suffix) {
+  const msDigits = Number(String(suffix).replace(/\D/g, "").slice(-6));
+  const extraDays = msDigits % 365;
+  return new Date(Date.now() + (365 + extraDays) * 86_400_000)
+    .toISOString()
+    .split("T")[0];
+}
+
 async function post(path, body, token) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -102,9 +116,9 @@ test("booking ownership: owner can access their own booking", async () => {
   const tourId = toursRes.data.tours?.[0]?.id;
   assert.ok(tourId, "need at least one tour in the database");
 
-  // Create a booking as user A
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().split("T")[0];
-  const bookingRes = await post("/bookings", { tourId, date: tomorrow, participants: 1 }, tokenA);
+  // Create a booking as user A — use a unique far-future date to avoid
+  // capacity exhaustion across repeated test runs.
+  const bookingRes = await post("/bookings", { tourId, date: uniqueFutureDate(suffix), participants: 1 }, tokenA);
   assert.equal(bookingRes.status, 201, `create booking: ${JSON.stringify(bookingRes.data)}`);
   const bookingId = bookingRes.data.id;
 
@@ -140,9 +154,8 @@ test("booking authorization: another customer is denied access (403)", async () 
   const tourId = toursRes.data.tours?.[0]?.id;
   assert.ok(tourId);
 
-  // User A creates a booking
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().split("T")[0];
-  const bookingRes = await post("/bookings", { tourId, date: tomorrow, participants: 1 }, tokenA);
+  // User A creates a booking — unique far-future date to avoid capacity exhaustion.
+  const bookingRes = await post("/bookings", { tourId, date: uniqueFutureDate(suffix), participants: 1 }, tokenA);
   assert.equal(bookingRes.status, 201);
   const bookingId = bookingRes.data.id;
 

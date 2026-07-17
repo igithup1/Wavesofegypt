@@ -93,7 +93,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       createdAt: user.createdAt.toISOString(),
     },
   };
-  res.status(201).json({ ...RegisterResponse.parse(responseData), token });
+  res.status(201).json(RegisterResponse.parse({ ...responseData, token }));
 });
 
 router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
