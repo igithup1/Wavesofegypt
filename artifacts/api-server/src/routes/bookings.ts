@@ -13,6 +13,7 @@ import {
   UpdateBookingResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthRequest } from "../lib/auth";
+import { sendBookingConfirmationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -98,6 +99,23 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
 
   // Increment booking count
   await db.update(toursTable).set({ bookingCount: (tour.bookingCount ?? 0) + 1 }).where(eq(toursTable.id, tourId));
+
+  // Send confirmation email (non-blocking — failure does not affect the response)
+  const bookingRef = `WOE-${String(booking.id).padStart(5, "0")}`;
+  const bookingDate = new Date(booking.date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  sendBookingConfirmationEmail({
+    travelerName: user.name ?? "Traveler",
+    travelerEmail: user.email,
+    bookingRef,
+    tourName: tour.title,
+    date: bookingDate,
+    participants: booking.participants,
+    totalPrice: totalPrice,
+  }).catch(() => {/* already logged inside sendBookingConfirmationEmail */});
 
   res.status(201).json(CreateBookingResponse.parse(
     formatBooking(booking, tour.title, tour.coverImage, user.name)
