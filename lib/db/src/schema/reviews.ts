@@ -5,7 +5,9 @@ import { z } from "zod/v4";
 export const reviewsTable = pgTable("reviews", {
   id: serial("id").primaryKey(),
   tourId: integer("tour_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id"), // nullable — supports anonymous reviews
+  name: text("name").notNull().default("Anonymous"),
+  country: text("country"),
   rating: numeric("rating", { precision: 3, scale: 2 }).notNull(),
   comment: text("comment"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

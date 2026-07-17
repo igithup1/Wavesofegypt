@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import {
   useListCategories,
   useGetBestSellerTours,
+  useListReviews,
 } from '@workspace/api-client-react';
 
 /* ─── Constants ──────────────────────────────────────────── */
@@ -38,62 +39,35 @@ const CAT_IMAGES: Record<number, string> = {
 };
 
 
-const REVIEWS = [
-  {
-    name: 'Sarah M.',
-    country: 'United Kingdom',
-    flag: '🇬🇧',
-    rating: 5,
-    text: 'Absolutely incredible. The Orange Bay trip was the highlight of our holiday. The boat, food, and snorkeling were all perfect. Booked via WhatsApp and confirmed in minutes.',
-    tour: 'Orange Bay Island Snorkeling',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
-  },
-  {
-    name: 'Marcus K.',
-    country: 'Germany',
-    flag: '🇩🇪',
-    rating: 5,
-    text: 'The desert quad bike safari was amazing. Our guide was so knowledgeable about Bedouin culture. Hotel pickup was on time, everything was organized perfectly.',
-    tour: 'Desert Safari & Quad Biking',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
-  },
-  {
-    name: 'Elena V.',
-    country: 'Russia',
-    flag: '🇷🇺',
-    rating: 5,
-    text: 'My kids loved the family snorkeling trip. The guide was patient with children, the boat had good shade and the fish were incredible. Will definitely book again next year.',
-    tour: 'Family Snorkeling Adventure',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&q=80',
-  },
-  {
-    name: 'Ahmed R.',
-    country: 'Saudi Arabia',
-    flag: '🇸🇦',
-    rating: 5,
-    text: 'Best diving experience I\'ve ever had. The instructor was PADI certified, the equipment was clean and modern, and the coral reef at Giftun Island is stunning.',
-    tour: 'PADI Diving Course',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80',
-  },
-  {
-    name: 'Julia B.',
-    country: 'France',
-    flag: '🇫🇷',
-    rating: 5,
-    text: 'The Luxor day trip from Hurghada was worth every penny. The private guide at Karnak Temple was exceptional — so much knowledge. Highly recommend this company.',
-    tour: 'Luxor Day Trip from Hurghada',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&q=80',
-  },
-  {
-    name: 'Tom H.',
-    country: 'Australia',
-    flag: '🇦🇺',
-    rating: 5,
-    text: 'Jet skiing, parasailing, and banana boat all in one afternoon. The staff were friendly and safety-conscious. Great value for money and instant WhatsApp confirmation.',
-    tour: 'Water Sports Package',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80',
-  },
+/* Country → flag emoji map (common nationalities for Hurghada) */
+const COUNTRY_FLAGS: Record<string, string> = {
+  'United Kingdom': '🇬🇧',
+  'Germany': '🇩🇪',
+  'Russia': '🇷🇺',
+  'Saudi Arabia': '🇸🇦',
+  'France': '🇫🇷',
+  'Australia': '🇦🇺',
+  'United States': '🇺🇸',
+  'Egypt': '🇪🇬',
+  'Netherlands': '🇳🇱',
+  'Poland': '🇵🇱',
+  'Italy': '🇮🇹',
+  'Spain': '🇪🇸',
+  'Ukraine': '🇺🇦',
+};
+
+/* Deterministic avatar from name initial */
+const AVATAR_POOL = [
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&q=80',
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80',
 ];
+function getAvatar(id: number) {
+  return AVATAR_POOL[id % AVATAR_POOL.length];
+}
 
 
 const FAQS = [
@@ -196,6 +170,7 @@ export default function Home() {
 
   const { data: bestSellers } = useGetBestSellerTours({ limit: 12 });
   const { data: categories } = useListCategories();
+  const { data: topReviews } = useListReviews({ rating: 5, limit: 6 });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -489,9 +464,9 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {REVIEWS.map((rev, i) => (
+            {(topReviews ?? []).map((rev, i) => (
               <motion.div
-                key={i}
+                key={rev.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -507,19 +482,21 @@ export default function Home() {
                 <div className="text-5xl leading-none font-serif text-accent/25 select-none mb-2 -mt-1">"</div>
 
                 {/* Review text — foreground, not muted */}
-                <p className="text-foreground text-sm leading-relaxed flex-1">{rev.text}"</p>
+                <p className="text-foreground text-sm leading-relaxed flex-1">{rev.comment ?? ''}"</p>
 
                 {/* Author */}
                 <div className="pt-4 mt-4 border-t border-border flex items-center gap-3">
                   <img
-                    src={rev.avatar}
+                    src={getAvatar(rev.id)}
                     alt={rev.name}
                     loading="lazy"
                     className="w-11 h-11 rounded-full object-cover ring-2 ring-border"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm">{rev.name}</p>
-                    <p className="text-xs text-muted-foreground">{rev.flag} {rev.country}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {rev.country ? `${COUNTRY_FLAGS[rev.country] ?? '🌍'} ${rev.country}` : ''}
+                    </p>
                   </div>
                   {/* Verified tag */}
                   <div className="flex items-center gap-1 text-[10px] text-green-600 font-semibold bg-green-50 border border-green-200 px-2 py-1 rounded-full shrink-0">
@@ -528,7 +505,9 @@ export default function Home() {
                 </div>
 
                 {/* Tour name */}
-                <p className="text-[11px] text-accent font-medium mt-2.5 truncate">{rev.tour}</p>
+                {rev.tourTitle && (
+                  <p className="text-[11px] text-accent font-medium mt-2.5 truncate">{rev.tourTitle}</p>
+                )}
               </motion.div>
             ))}
           </div>

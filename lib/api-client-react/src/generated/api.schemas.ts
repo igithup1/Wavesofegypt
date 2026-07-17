@@ -200,7 +200,13 @@ export interface ItineraryStep {
 export interface Review {
   id: number;
   tourId: number;
-  userId: number;
+  /** @nullable */
+  userId?: number | null;
+  name: string;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  tourTitle?: string | null;
   /** @nullable */
   userName?: string | null;
   /** @nullable */
@@ -294,6 +300,8 @@ export interface AvailabilitySlot {
 
 export interface ReviewInput {
   tourId: number;
+  name: string;
+  country?: string;
   /**
      * @minimum 1
      * @maximum 5
@@ -438,7 +446,8 @@ limit?: number;
 };
 
 export type ListReviewsParams = {
-tourId: number;
+tourId?: number;
+rating?: number;
 limit?: number;
 offset?: number;
 };

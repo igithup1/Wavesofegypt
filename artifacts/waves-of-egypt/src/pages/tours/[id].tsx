@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRoute, Link } from 'wouter';
-import { useGetTour, useListTours } from '@workspace/api-client-react';
+import { useGetTour, useListTours, useListReviews, useCreateReview } from '@workspace/api-client-react';
 import { useTripPlanner } from '@/hooks/useTripPlanner';
 import Layout from '@/components/layout/Layout';
 import { TourCard } from '@/components/ui/TourCard';
@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link as LinkPrimitive } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Gallery images fallback array from Unsplash
 const GALLERY_EXTRAS = [
@@ -74,12 +75,155 @@ function FAQAccordion({ faq }: { faq: Array<{ question: string; answer: string }
   );
 }
 
+function ReviewCard({ name, country, rating, comment, createdAt }: {
+  name: string;
+  country?: string | null;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+}) {
+  const COUNTRY_FLAGS: Record<string, string> = {
+    'United Kingdom': '🇬🇧', 'Germany': '🇩🇪', 'Russia': '🇷🇺',
+    'Saudi Arabia': '🇸🇦', 'France': '🇫🇷', 'Australia': '🇦🇺',
+    'United States': '🇺🇸', 'Egypt': '🇪🇬', 'Netherlands': '🇳🇱',
+    'Poland': '🇵🇱', 'Italy': '🇮🇹', 'Spain': '🇪🇸', 'Ukraine': '🇺🇦',
+  };
+  const date = new Date(createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="font-semibold text-sm">{name}</p>
+          {country && (
+            <p className="text-xs text-muted-foreground mt-0.5">{COUNTRY_FLAGS[country] ?? '🌍'} {country}</p>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{date}</span>
+      </div>
+      <div className="flex items-center gap-0.5 mb-2">
+        {[1, 2, 3, 4, 5].map(s => (
+          <Star key={s} className={`w-3.5 h-3.5 ${s <= Math.round(rating) ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+        ))}
+      </div>
+      {comment && <p className="text-sm text-muted-foreground leading-relaxed">{comment}</p>}
+    </div>
+  );
+}
+
+function LeaveReviewForm({ tourId, onSuccess }: { tourId: number; onSuccess: () => void }) {
+  const [name, setName] = useState('');
+  const [country, setCountry] = useState('');
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const { mutate, isPending, isError } = useCreateReview({
+    mutation: {
+      onSuccess: () => {
+        setSubmitted(true);
+        onSuccess();
+      },
+    },
+  });
+
+  if (submitted) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
+        <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
+        <p className="font-semibold text-green-700">Thank you for your review!</p>
+        <p className="text-sm text-green-600 mt-1">Your feedback helps other travelers.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-muted/30 border border-border rounded-xl p-6">
+      <h3 className="font-bold text-base mb-4">Leave a Review</h3>
+      <div className="space-y-4">
+        {/* Star picker */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Your Rating</label>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map(s => (
+              <button
+                key={s}
+                type="button"
+                onMouseEnter={() => setHoverRating(s)}
+                onMouseLeave={() => setHoverRating(0)}
+                onClick={() => setRating(s)}
+                className="p-0.5"
+              >
+                <Star className={`w-7 h-7 transition-colors ${s <= (hoverRating || rating) ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Your Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Sarah M."
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Country</label>
+            <input
+              type="text"
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              placeholder="e.g. United Kingdom"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Your Review</label>
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Tell future travelers about your experience…"
+            rows={3}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          />
+        </div>
+
+        {isError && (
+          <p className="text-sm text-red-600">Something went wrong. Please try again.</p>
+        )}
+
+        <Button
+          onClick={() => {
+            if (!name.trim()) return;
+            mutate({ data: { tourId, name: name.trim(), country: country.trim() || undefined, rating, comment: comment.trim() || undefined } });
+          }}
+          disabled={isPending || !name.trim()}
+          className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+        >
+          {isPending ? 'Submitting…' : 'Submit Review'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function TourDetail() {
   const [, params] = useRoute('/tours/:id');
   const id = params?.id ? parseInt(params.id) : 0;
   const { toggleTour, isSaved } = useTripPlanner();
+  const queryClient = useQueryClient();
 
   const { data: tour, isLoading } = useGetTour(id, { query: { enabled: !!id } } as any);
+  const { data: reviewsData, refetch: refetchReviews } = useListReviews(
+    { tourId: id, limit: 50 },
+    { query: { enabled: !!id } } as any,
+  );
   const { data: related } = useListTours({
     categoryId: tour?.categoryId,
     limit: 4,
@@ -383,17 +527,39 @@ export default function TourDetail() {
               </section>
             )}
 
-            {/* Reviews placeholder */}
+            {/* Reviews */}
             <section id="reviews">
-              <h2 className="text-2xl font-serif font-bold mb-6">Reviews</h2>
-              <div className="bg-muted/40 rounded-2xl p-8 text-center border border-border">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  {[1,2,3,4,5].map(s => <Star key={s} className="w-7 h-7 fill-accent text-accent" />)}
+              <h2 className="text-2xl font-serif font-bold mb-2">Reviews</h2>
+
+              {/* Aggregate score */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-1">
+                  {[1,2,3,4,5].map(s => <Star key={s} className="w-5 h-5 fill-accent text-accent" />)}
                 </div>
-                <div className="text-3xl font-bold">{tour.rating.toFixed(1)} / 5</div>
-                <div className="text-muted-foreground mt-1">Based on {tour.reviewCount} verified reviews</div>
-                <p className="text-sm text-muted-foreground mt-4 max-w-sm mx-auto">Reviews from real travelers — Excellent overall experience, knowledgeable guides, and outstanding value.</p>
+                <span className="text-2xl font-bold">{tour.rating.toFixed(1)}</span>
+                <span className="text-muted-foreground text-sm">· {tour.reviewCount} {tour.reviewCount === 1 ? 'review' : 'reviews'}</span>
               </div>
+
+              {/* Review list */}
+              {reviewsData && reviewsData.length > 0 ? (
+                <div className="space-y-4 mb-8">
+                  {reviewsData.map(rev => (
+                    <ReviewCard
+                      key={rev.id}
+                      name={rev.name}
+                      country={rev.country}
+                      rating={rev.rating}
+                      comment={rev.comment}
+                      createdAt={typeof rev.createdAt === 'string' ? rev.createdAt : new Date(rev.createdAt).toISOString()}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm mb-8">No reviews yet — be the first to share your experience!</p>
+              )}
+
+              {/* Leave a review form */}
+              <LeaveReviewForm tourId={tour.id} onSuccess={() => refetchReviews()} />
             </section>
 
           </div>

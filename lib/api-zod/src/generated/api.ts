@@ -592,7 +592,8 @@ export const GetTourAvailabilityResponse = zod.array(GetTourAvailabilityResponse
  * @summary List reviews for a tour
  */
 export const ListReviewsQueryParams = zod.object({
-  "tourId": zod.coerce.number(),
+  "tourId": zod.coerce.number().optional(),
+  "rating": zod.coerce.number().optional(),
   "limit": zod.coerce.number().optional(),
   "offset": zod.coerce.number().optional()
 })
@@ -600,7 +601,10 @@ export const ListReviewsQueryParams = zod.object({
 export const ListReviewsResponseItem = zod.object({
   "id": zod.number(),
   "tourId": zod.number(),
-  "userId": zod.number(),
+  "userId": zod.number().nullish(),
+  "name": zod.string(),
+  "country": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
   "userName": zod.string().nullish(),
   "userAvatar": zod.string().nullish(),
   "rating": zod.number(),
@@ -619,6 +623,8 @@ export const createReviewBodyRatingMax = 5;
 
 export const CreateReviewBody = zod.object({
   "tourId": zod.number(),
+  "name": zod.string().min(1),
+  "country": zod.string().optional(),
   "rating": zod.number().min(1).max(createReviewBodyRatingMax),
   "comment": zod.string().optional()
 })
@@ -626,7 +632,10 @@ export const CreateReviewBody = zod.object({
 export const CreateReviewResponse = zod.object({
   "id": zod.number(),
   "tourId": zod.number(),
-  "userId": zod.number(),
+  "userId": zod.number().nullish(),
+  "name": zod.string(),
+  "country": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
   "userName": zod.string().nullish(),
   "userAvatar": zod.string().nullish(),
   "rating": zod.number(),
