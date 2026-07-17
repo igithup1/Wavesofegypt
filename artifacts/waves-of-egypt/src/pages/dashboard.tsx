@@ -11,9 +11,10 @@ export default function Dashboard() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: bookingsData, isLoading: isBookingsLoading } = useListBookings(
-    {}, 
-    { query: { enabled: !!user } }
+    {},
+    { query: { enabled: !!user } as any },
   );
 
   React.useEffect(() => {
@@ -43,13 +44,13 @@ export default function Dashboard() {
     );
   }
 
-  const upcomingBookings = bookingsData?.tours?.filter(b => 
+  const upcomingBookings = bookingsData?.filter(b =>
     b.status === 'confirmed' || b.status === 'pending'
-  ) || [];
-  
-  const pastBookings = bookingsData?.tours?.filter(b => 
+  ) ?? [];
+
+  const pastBookings = bookingsData?.filter(b =>
     b.status === 'completed' || b.status === 'cancelled'
-  ) || [];
+  ) ?? [];
 
   return (
     <Layout>

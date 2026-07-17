@@ -14,6 +14,9 @@ interface TourCardProps {
 export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps) {
   const { toggleTour, isSaved } = useTripPlanner();
   const saved = isSaved(tour.id);
+  // isBestSeller is stored in the DB but not yet surfaced in the OpenAPI spec
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = tour as Tour & { isBestSeller?: boolean };
 
   const whatsappMsg = encodeURIComponent(
     `Hello, I would like to book the ${tour.title}. Could you please send me the available dates and price?`
@@ -49,7 +52,7 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            {tour.isBestSeller && (
+            {t.isBestSeller && (
               <span className="bg-accent text-accent-foreground px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full shadow">
                 Best Seller
               </span>
@@ -154,12 +157,12 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {tour.isBestSeller && (
+          {t.isBestSeller && (
             <span className="bg-accent text-accent-foreground px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full shadow">
               Best Seller
             </span>
           )}
-          {tour.isFeatured && !tour.isBestSeller && (
+          {tour.isFeatured && !t.isBestSeller && (
             <span className="bg-primary text-primary-foreground px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full shadow">
               Featured
             </span>

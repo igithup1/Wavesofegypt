@@ -1,17 +1,24 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# compiled output
+# ── Compiled output ──────────────────────────────────────────────────────────
 dist
 tmp
 out-tsc
 *.tsbuildinfo
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules
+
+# ── Expo / React Native ──────────────────────────────────────────────────────
 .expo
 .expo-shared
 
-# dependencies
-node_modules
+# ── Environment & secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
 
-# IDEs and editors
+# ── IDE / editors ────────────────────────────────────────────────────────────
 /.idea
 .project
 .classpath
@@ -19,15 +26,13 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
+# ── Misc build artefacts ─────────────────────────────────────────────────────
 /.sass-cache
 /connect.lock
 /coverage
@@ -37,13 +42,27 @@ yarn-error.log
 testem.log
 /typings
 
-# System Files
+# ── System files ─────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# ── Replit-specific ──────────────────────────────────────────────────────────
+# These directories are managed by the Replit platform and contain
+# platform-specific state that should not be committed to Git.
 .cache/
 .local/
+.agents/
+
+# ── Session / chat artefacts in attached_assets ──────────────────────────────
+# Files created when pasting prompts or uploading screenshots into the Replit
+# AI chat. They are session-specific and not part of the project.
+attached_assets/Pasted-*.txt
+attached_assets/*.jpg
+attached_assets/*.jpeg
+attached_assets/*.png
+attached_assets/*.webp
+attached_assets/generated_images/
+
+# ── Replit Nx / GitHub Copilot instructions (not project docs) ───────────────
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md

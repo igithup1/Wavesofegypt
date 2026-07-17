@@ -92,9 +92,15 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
 
   const totalPrice = Number(tour.price) * participants;
 
+  // zod.coerce.date() in the generated schema converts the incoming ISO string
+  // to a JS Date; Drizzle's date({ mode: "string" }) column requires YYYY-MM-DD.
+  const dateStr = date instanceof Date
+    ? date.toISOString().split("T")[0]
+    : String(date);
+
   const [booking] = await db
     .insert(bookingsTable)
-    .values({ tourId, userId: user.id, date, participants, totalPrice: String(totalPrice), notes })
+    .values({ tourId, userId: user.id, date: dateStr, participants, totalPrice: String(totalPrice), notes })
     .returning();
 
   // Increment booking count

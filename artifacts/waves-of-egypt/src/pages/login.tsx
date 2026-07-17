@@ -27,7 +27,7 @@ export default function Login() {
         else setLocation('/dashboard');
       },
       onError: (error) => {
-        toast.error(error.error || 'Failed to log in');
+        toast.error(error.message || 'Failed to log in');
       }
     });
   };

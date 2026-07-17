@@ -10,8 +10,9 @@ export default function AdminDashboard() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: dashboard, isLoading: isDashLoading } = useGetAdminDashboard({
-    query: { enabled: !!user && user.role === 'admin' }
+    query: { enabled: !!user && user.role === 'admin' } as any,
   });
 
   React.useEffect(() => {

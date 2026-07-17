@@ -11,12 +11,13 @@ export default function VendorDashboard() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: dashboard, isLoading: isDashLoading } = useGetVendorDashboard({
-    query: { enabled: !!user && user.role === 'vendor' }
+    query: { enabled: !!user && user.role === 'vendor' } as any,
   });
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: toursData, isLoading: isToursLoading } = useListVendorTours({
-    query: { enabled: !!user && user.role === 'vendor' }
+    query: { enabled: !!user && user.role === 'vendor' } as any,
   });
 
   React.useEffect(() => {
@@ -124,8 +125,8 @@ export default function VendorDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {toursData?.tours && toursData.tours.length > 0 ? (
-                    toursData.tours.map(tour => (
+                  {toursData && toursData.length > 0 ? (
+                    toursData.map(tour => (
                       <tr key={tour.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                         <td className="px-6 py-4 font-medium flex items-center gap-3">
                           <img src={tour.coverImage} alt="" className="w-10 h-10 rounded object-cover" />

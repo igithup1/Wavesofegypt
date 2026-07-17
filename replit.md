@@ -1,45 +1,98 @@
-# [Project name]
+# WavesOfEgypt
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Hurghada's curated tour marketplace — Red Sea experiences, WhatsApp booking, verified local operators.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+```bash
+# API server (port set by Replit via $PORT)
+pnpm --filter @workspace/api-server run dev
+
+# Web app
+pnpm --filter @workspace/waves-of-egypt run dev
+
+# Mobile app (Expo)
+pnpm --filter @workspace/waves-of-egypt-mobile run dev
+
+# Full typecheck
+pnpm run typecheck
+
+# Full build (typecheck + all packages)
+pnpm run build
+
+# Regenerate API client hooks + Zod validators from OpenAPI spec
+pnpm --filter @workspace/api-spec run codegen
+
+# Push DB schema changes to the database (dev only — never run in production)
+pnpm --filter @workspace/db run push
+```
+
+## Required Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string — provisioned via the Replit PostgreSQL integration |
+| `SMTP_HOST` | SMTP server for booking confirmation emails (optional — emails are skipped if unset) |
+| `SMTP_PORT` | SMTP port (optional, default: 587) |
+| `SMTP_USER` | SMTP username (optional) |
+| `SMTP_PASS` | SMTP password — store as a Replit secret (optional) |
+| `SMTP_FROM` | From address for emails (optional, default: bookings@wavesofegypt.com) |
+
+Replit auto-injects `PORT`, `BASE_PATH`, `REPL_ID`, `REPLIT_DEV_DOMAIN`, and `REPLIT_EXPO_DEV_DOMAIN`.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- **Monorepo**: pnpm workspaces, Node.js 24, TypeScript 5.9
+- **API**: Express 5, PostgreSQL, Drizzle ORM, Zod v4
+- **API contract**: OpenAPI 3.1 → Orval codegen → `lib/api-client-react`, `lib/api-zod`
+- **Web**: React 19, Vite 7, TailwindCSS v4, Wouter (routing), Framer Motion
+- **Mobile**: Expo 54, React Native 0.81, Expo Router
+- **Auth**: Bearer token, sessions stored in `sessions` table (SHA-256 + fixed salt — not bcrypt)
+- **Email**: Nodemailer (SMTP, optional — missing SMTP vars → warning + skip)
+- **Build**: esbuild (API server → single ESM bundle)
 
-## Where things live
+## Where Things Live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+| What | Where |
+|---|---|
+| DB schema (source of truth) | `lib/db/src/schema/` |
+| OpenAPI spec (source of truth) | `lib/api-spec/openapi.yaml` |
+| Generated API hooks | `lib/api-client-react/` — **do not edit** |
+| Generated Zod validators | `lib/api-zod/` — **do not edit** |
+| Theme / design tokens | `artifacts/waves-of-egypt/src/index.css` |
+| Route handlers | `artifacts/api-server/src/routes/` |
+| Page components | `artifacts/waves-of-egypt/src/pages/` |
+| Mobile screens | `artifacts/waves-of-egypt-mobile/app/` |
+| Seed scripts | `lib/db/seed-hurghada.mjs`, `artifacts/api-server/src/seeds/` |
 
-## Architecture decisions
+## Architecture Decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Token-in-header auth** (not cookies/sessions): avoids CORS complexity across sub-domains; token stored in `localStorage` on web, in-memory on mobile. Sessions have a 30-day TTL, stored in `sessions` table.
+- **OpenAPI → codegen** workflow: all API client code in `lib/api-client-react/` and `lib/api-zod/` is generated — run `pnpm --filter @workspace/api-spec run codegen` after any spec change.
+- **WhatsApp as primary booking channel**: no payment gateway. Users select a tour and are routed to WhatsApp with a pre-filled message. Checkout form captures intent data for the operator.
+- **React.lazy + Suspense** on all routes except Home: splits every page into its own JS chunk — significantly reduces initial bundle load time.
+- **Replit-specific Vite plugins** (`cartographer`, `dev-banner`, `runtime-error-modal`) are gated behind `REPL_ID !== undefined` and load only when running on Replit — the build produces a clean bundle for any other host.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Homepage**: hero, category browser, best sellers grid (12 tours), reviews, FAQ, WhatsApp CTA.
+- **Tour listing**: filterable by category, search, price. Each card has a heart for the My Trip planner.
+- **Tour detail**: gallery slider, itinerary, inclusions/exclusions, real reviews, WhatsApp booking button.
+- **My Trip planner**: localStorage-based wishlist with per-tour date/guest pickers and a WhatsApp message builder.
+- **Booking flow**: checkout form → confirmation page → booking confirmation email (if SMTP configured).
+- **Admin dashboard**: manage all bookings (view, filter by status, update status).
+- **Mobile app**: home, category browse, tour detail — all backed by the same API server.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **`pnpm --filter @workspace/db run push`** is for development only. In production, use Drizzle migrations.
+- The **esbuild `overrides`** in `pnpm-workspace.yaml` exclude non-Linux binaries. If developing on macOS or Windows, comment those out before running `pnpm install`.
+- **Mobile fonts on web**: `@expo-google-fonts` uses `fontfaceobserver` on web, which has its own 6 000 ms timeout that throws outside React's tree. The `_layout.tsx` skips font loading entirely on `Platform.OS === 'web'` to avoid this crash.
+- **API server must be built before running integration tests**: `pnpm --filter @workspace/api-server run build` first, then `node --test artifacts/api-server/src/tests/booking-auth.test.mjs`.
+- The `lib/api-client-react/` and `lib/api-zod/` directories are **generated** — never edit them. Run codegen after any OpenAPI spec change.
 
-## Pointers
+## User Preferences
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- No unnecessary new features — stability and polish over feature velocity.
+- Booking is WhatsApp-first; no payment gateway currently.
+- Keep the premium visual tone: serif headings (Playfair Display), teal/navy palette, generous whitespace.

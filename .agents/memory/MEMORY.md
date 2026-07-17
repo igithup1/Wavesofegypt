@@ -2,3 +2,5 @@
 - [WavesOfEgypt API quirks](waves-of-egypt-api-quirks.md) — getFeaturedTours/getBestSellerTours return Tour[] directly; only useListTours returns TourList with .tours property.
 - [WavesOfEgypt design](waves-of-egypt-design.md) — premium polish decisions: hero copy, SectionHeader pattern, review card layout, shadow system, FAQ animation, gallery copy rule.
 - [Mobile font timeout](mobile-font-timeout.md) — 6000ms crash fix: 4s deadline in _layout.tsx; remove iOS-only static imports from tabs layout.
+- [TypeScript quirks](typescript-quirks.md) — orval queryKey, isBestSeller cast, date coercion, error.message, ref compat fixes needed across the codebase.
+- [Build configuration](build-config.md) — mobile excluded from workspace build; mockup-sandbox PORT/BASE_PATH use safe defaults; key gitignore/env rules.

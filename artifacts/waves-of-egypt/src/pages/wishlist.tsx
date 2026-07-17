@@ -12,8 +12,9 @@ export default function Wishlist() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: wishlist, isLoading: isWishlistLoading } = useGetWishlist({
-    query: { enabled: !!user }
+    query: { enabled: !!user } as any,
   });
 
   if (isAuthLoading || isWishlistLoading) {

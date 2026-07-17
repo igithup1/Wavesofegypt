@@ -30,7 +30,7 @@ export default function Register() {
         else setLocation('/dashboard');
       },
       onError: (error) => {
-        toast.error(error.error || 'Failed to create account');
+        toast.error(error.message || 'Failed to create account');
       }
     });
   };

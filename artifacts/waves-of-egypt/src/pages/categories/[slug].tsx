@@ -20,7 +20,8 @@ export default function CategoryDetail() {
 
   const { data: toursData, isLoading } = useListTours(
     { categoryId: category?.id },
-    { query: { enabled: !!category?.id } }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!category?.id } as any },
   );
 
   return (

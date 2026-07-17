@@ -17,11 +17,12 @@ export default function Checkout() {
   const tourId = params?.tourId ? parseInt(params.tourId) : 0;
   const [, setLocation] = useLocation();
 
-  const { data: tour, isLoading } = useGetTour(tourId, { 
-    query: { enabled: !!tourId } 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: tour, isLoading } = useGetTour(tourId, {
+    query: { enabled: !!tourId } as any,
   });
-  
-  const { data: user } = useGetMe({ query: { retry: false } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: user } = useGetMe({ query: { retry: false } as any });
 
   const [date, setDate] = useState<Date>();
   const [participants, setParticipants] = useState(1);
@@ -61,7 +62,7 @@ export default function Checkout() {
           setLocation(`/booking-confirmation?id=${data.id}`);
         },
         onError: (error) => {
-          toast.error(error.error || 'Failed to complete booking');
+          toast.error(error.message || 'Failed to complete booking');
         }
       }
     );

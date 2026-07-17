@@ -15,11 +15,14 @@ export default function BookingConfirmation() {
   const params = new URLSearchParams(search);
   const bookingId = params.get('id') ? parseInt(params.get('id')!) : 0;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: booking, isLoading, error } = useGetBooking(bookingId, {
-    query: { enabled: !!bookingId, retry: false },
+    query: { enabled: !!bookingId, retry: false } as any,
   });
 
-  const isForbidden = (error as ApiError | null)?.status === 403;
+  // error is an ApiError class instance (from custom-fetch) which carries .status
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isForbidden = (error as any)?.status === 403;
 
   const bookingRef = booking ? `WOE-${String(booking.id).padStart(5, '0')}` : '';
 

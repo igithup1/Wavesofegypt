@@ -9,13 +9,14 @@ export default function DestinationDetail() {
   const [, params] = useRoute('/destinations/:id');
   const id = params?.id ? parseInt(params.id) : 0;
 
-  const { data: destination, isLoading: isLoadingDest } = useGetDestination(id, { 
-    query: { enabled: !!id } 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: destination, isLoading: isLoadingDest } = useGetDestination(id, {
+    query: { enabled: !!id } as any,
   });
-  
   const { data: toursData, isLoading: isLoadingTours } = useListTours(
     { destinationId: id },
-    { query: { enabled: !!id } }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!id } as any },
   );
 
   if (isLoadingDest || isLoadingTours) {
