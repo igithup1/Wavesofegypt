@@ -91,9 +91,10 @@ export default function AdminDashboard() {
     query: { enabled: !!user && user.role === 'admin' } as any,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: allBookings, isLoading: isBookingsLoading, refetch: refetchBookings } = useListBookings(
     { limit },
-    { query: { enabled: !!user && user.role === 'admin' } }
+    { query: { enabled: !!user && user.role === 'admin' } as any }
   );
 
   React.useEffect(() => {
