@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRoute, Link } from 'wouter';
-import { useGetTour, useListTours, useListReviews, useCreateReview } from '@workspace/api-client-react';
+import { useGetTour, useListTours, useListReviews, useCreateReview, getGetTourQueryKey } from '@workspace/api-client-react';
 import { useTripPlanner } from '@/hooks/useTripPlanner';
 import Layout from '@/components/layout/Layout';
 import { TourCard } from '@/components/ui/TourCard';
@@ -559,7 +559,10 @@ export default function TourDetail() {
               )}
 
               {/* Leave a review form */}
-              <LeaveReviewForm tourId={tour.id} onSuccess={() => refetchReviews()} />
+              <LeaveReviewForm tourId={tour.id} onSuccess={() => {
+                refetchReviews();
+                queryClient.invalidateQueries({ queryKey: getGetTourQueryKey(tour.id) });
+              }} />
             </section>
 
           </div>
