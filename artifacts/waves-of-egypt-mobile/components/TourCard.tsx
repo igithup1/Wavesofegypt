@@ -11,6 +11,7 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useWishlist } from '@/contexts/WishlistContext';
 import type { Tour } from '@workspace/api-client-react';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -31,6 +32,9 @@ function openWhatsApp(tourTitle: string, whatsapp?: string | null) {
 
 export function TourCard({ tour, horizontal = false }: TourCardProps) {
   const colors = useColors();
+  const { savedIds, toggle } = useWishlist();
+  const isSaved = savedIds.has(tour.id);
+
   const discount = tour.discountPrice
     ? Math.round((1 - tour.discountPrice / tour.price) * 100)
     : 0;
@@ -38,6 +42,13 @@ export function TourCard({ tour, horizontal = false }: TourCardProps) {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/tour/${tour.id}`);
+  };
+
+  const handleWishlistToggle = (e: { stopPropagation?: () => void }) => {
+    // Prevent the card press from firing.
+    if (e?.stopPropagation) e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    toggle(tour);
   };
 
   const cardWidth = horizontal ? SCREEN_WIDTH * 0.72 : undefined;
@@ -87,6 +98,22 @@ export function TourCard({ tour, horizontal = false }: TourCardProps) {
           <Feather name="clock" size={11} color="#FFFFFF" />
           <Text style={styles.durationText}>{tour.durationHours}h</Text>
         </View>
+
+        {/* Heart / save button */}
+        <Pressable
+          onPress={handleWishlistToggle}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.heartButton,
+            { opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Ionicons
+            name={isSaved ? 'heart' : 'heart-outline'}
+            size={22}
+            color={isSaved ? '#EF4444' : '#FFFFFF'}
+          />
+        </Pressable>
       </View>
 
       {/* Body */}
@@ -213,6 +240,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 20,
+  },
+  heartButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   durationText: {
     color: '#FFFFFF',
