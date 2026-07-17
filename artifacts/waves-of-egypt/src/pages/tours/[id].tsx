@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRoute, Link } from 'wouter';
 import { useGetTour, useListTours } from '@workspace/api-client-react';
+import { useTripPlanner } from '@/hooks/useTripPlanner';
 import Layout from '@/components/layout/Layout';
 import { TourCard } from '@/components/ui/TourCard';
 import {
@@ -76,7 +77,7 @@ function FAQAccordion({ faq }: { faq: Array<{ question: string; answer: string }
 export default function TourDetail() {
   const [, params] = useRoute('/tours/:id');
   const id = params?.id ? parseInt(params.id) : 0;
-  const [wishlisted, setWishlisted] = useState(false);
+  const { toggleTour, isSaved } = useTripPlanner();
 
   const { data: tour, isLoading } = useGetTour(id, { query: { enabled: !!id } } as any);
   const { data: related } = useListTours({
@@ -221,10 +222,11 @@ export default function TourDetail() {
                 <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground flex-1">{tour.title}</h1>
                 <div className="flex gap-2 mt-1">
                   <button
-                    onClick={() => setWishlisted(!wishlisted)}
+                    onClick={() => toggleTour(tour)}
+                    aria-label={isSaved(tour.id) ? 'Remove from My Trip' : 'Save to My Trip'}
                     className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
                   >
-                    <Heart className={`w-5 h-5 ${wishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                    <Heart className={`w-5 h-5 transition-colors ${isSaved(tour.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
                   </button>
                   <button className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors">
                     <Share2 className="w-5 h-5 text-muted-foreground" />

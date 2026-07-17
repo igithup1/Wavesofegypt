@@ -19,6 +19,7 @@ import Dashboard from '@/pages/dashboard';
 import VendorDashboard from '@/pages/vendor';
 import AdminDashboard from '@/pages/admin';
 import Wishlist from '@/pages/wishlist';
+import MyTrip from '@/pages/my-trip';
 import About from '@/pages/about';
 import Contact from '@/pages/contact';
 import Blog from '@/pages/blog';
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/vendor" component={VendorDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/wishlist" component={Wishlist} />
+      <Route path="/my-trip" component={MyTrip} />
       
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />

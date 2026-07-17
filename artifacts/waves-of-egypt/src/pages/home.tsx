@@ -3,17 +3,15 @@ import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import {
   Search, MessageCircle, Star, Shield, Car, Users, Tag,
-  ChevronRight, ChevronDown, ChevronUp, MapPin,
-  Clock, Award, BadgePercent, Check
+  ChevronRight, ChevronDown, ChevronUp,
+  Clock, Award, Check
 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { TourCard } from '@/components/ui/TourCard';
 import { Button } from '@/components/ui/button';
 import {
-  useGetFeaturedTours,
   useListCategories,
   useGetBestSellerTours,
-  useListTours,
 } from '@workspace/api-client-react';
 
 /* ─── Constants ──────────────────────────────────────────── */
@@ -39,44 +37,6 @@ const CAT_IMAGES: Record<number, string> = {
   6: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=700&q=85',
 };
 
-const DESTINATIONS = [
-  {
-    name: 'Orange Bay',
-    tagline: "Hurghada's most beautiful island",
-    img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&q=85',
-    query: 'Orange Bay',
-  },
-  {
-    name: 'Paradise Island',
-    tagline: 'White sand, crystal waters',
-    img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=85',
-    query: 'Paradise Island',
-  },
-  {
-    name: 'Dolphin House',
-    tagline: 'Swim with wild dolphins',
-    img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=700&q=85',
-    query: 'Dolphin House',
-  },
-  {
-    name: 'Desert Safari',
-    tagline: 'Quad bikes & Bedouin camps',
-    img: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=700&q=85',
-    query: 'Safari',
-  },
-  {
-    name: 'Luxor',
-    tagline: 'Temples & Valley of the Kings',
-    img: 'https://images.unsplash.com/photo-1539650116574-75c0c6d14e80?w=700&q=85',
-    query: 'Luxor',
-  },
-  {
-    name: 'Cairo',
-    tagline: 'Pyramids of Giza & Sphinx',
-    img: 'https://images.unsplash.com/photo-1568322445389-f64ac2515020?w=700&q=85',
-    query: 'Cairo',
-  },
-];
 
 const REVIEWS = [
   {
@@ -135,16 +95,6 @@ const REVIEWS = [
   },
 ];
 
-const GALLERY_IMGS = [
-  { src: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=700&q=85', alt: 'Orange Bay Island' },
-  { src: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=700&q=85', alt: 'Red Sea Snorkeling' },
-  { src: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=700&q=85', alt: 'Desert Safari' },
-  { src: 'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=700&q=85', alt: 'Water Sports' },
-  { src: 'https://images.unsplash.com/photo-1568322445389-f64ac2515020?w=700&q=85', alt: 'Egyptian Temples' },
-  { src: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&q=85', alt: 'Crystal Waters' },
-  { src: 'https://images.unsplash.com/photo-1539650116574-75c0c6d14e80?w=700&q=85', alt: 'Hurghada Sea' },
-  { src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=85', alt: 'Paradise Island' },
-];
 
 const FAQS = [
   {
@@ -244,10 +194,8 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: bestSellers } = useGetBestSellerTours({ limit: 8 });
+  const { data: bestSellers } = useGetBestSellerTours({ limit: 12 });
   const { data: categories } = useListCategories();
-  const { data: specialOffers } = useListTours({ limit: 4, sortBy: 'price_asc' } as any);
-  const { data: featuredTours } = useGetFeaturedTours({ limit: 4 });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,27 +327,6 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          BEST SELLERS — horizontal scroll strip
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-background overflow-hidden">
-        <div className="container mx-auto px-4 md:px-6">
-          <SectionHeader
-            label="Traveler Favorites"
-            title="Best Selling Tours"
-            subtitle="Our most-booked experiences — chosen by thousands of travelers every month."
-            href="/tours?sortBy=best_seller"
-          />
-        </div>
-        <div className="pl-4 md:pl-[calc((100vw-1280px)/2+24px)] overflow-x-auto pb-4 scrollbar-hide">
-          <div className="flex gap-4 pr-6 w-max">
-            {bestSellers?.map((tour, i) => (
-              <TourCard key={tour.id} tour={tour} index={i} horizontal />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
           CATEGORIES — premium image cards
       ══════════════════════════════════════════════════════ */}
       <section className="py-20 bg-muted/30">
@@ -447,6 +374,25 @@ export default function Home() {
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
+          BEST SELLING EXPERIENCES — full grid
+      ══════════════════════════════════════════════════════ */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4 md:px-6">
+          <SectionHeader
+            label="Traveler Favorites"
+            title="Best Selling Experiences"
+            subtitle="Our most-booked tours — chosen by thousands of happy travelers every month."
+            href="/tours?sortBy=best_seller"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {bestSellers?.map((tour, i) => (
+              <TourCard key={tour.id} tour={tour} index={i} />
+            ))}
           </div>
         </div>
       </section>
@@ -524,65 +470,6 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          POPULAR DESTINATIONS
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <SectionHeader
-            label="Top Destinations"
-            title="Where Will You Go?"
-            subtitle="From Red Sea islands to ancient temples — every destination is a world of its own."
-          />
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-            {DESTINATIONS.map((dest, i) => (
-              <motion.div
-                key={dest.name}
-                initial={{ opacity: 0, scale: 0.97 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.07, duration: 0.5 }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setLocation(`/tours?search=${encodeURIComponent(dest.query)}`)}
-                className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-[4/3]"
-              >
-                <img
-                  src={dest.img}
-                  alt={dest.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover absolute inset-0 group-hover:scale-[1.06] transition-transform duration-700 ease-out"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-bold text-sm md:text-base leading-tight">{dest.name}</h3>
-                  <p className="text-white/65 text-xs mt-0.5">{dest.tagline}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          GREAT VALUE TOURS (formerly Special Offers)
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-muted/30 border-y border-border">
-        <div className="container mx-auto px-4 md:px-6">
-          <SectionHeader
-            label="Great Value"
-            title="Affordable Adventures"
-            subtitle="Premium experiences, accessible prices — Hurghada doesn't have to break the bank."
-            href="/tours?sortBy=price_asc"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {specialOffers?.tours?.map((tour, i) => (
-              <TourCard key={tour.id} tour={tour} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
           CUSTOMER REVIEWS — premium testimonial cards
       ══════════════════════════════════════════════════════ */}
       <section className="py-24 bg-background">
@@ -642,45 +529,6 @@ export default function Home() {
 
                 {/* Tour name */}
                 <p className="text-[11px] text-accent font-medium mt-2.5 truncate">{rev.tour}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          GALLERY — visual immersion
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-muted/20">
-        <div className="container mx-auto px-4 md:px-6">
-          <SectionHeader
-            label="Visual Journey"
-            title="A Glimpse of What Awaits"
-            subtitle="From turquoise waters to golden deserts — every experience tells a story."
-            centered
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-            {GALLERY_IMGS.map((img, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ delay: i * 0.06, duration: 0.45 }}
-                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer"
-              >
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-[1.08] transition-transform duration-700 ease-out"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300 flex items-end justify-start p-3">
-                  <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 px-2.5 py-1 rounded-full">
-                    {img.alt}
-                  </span>
-                </div>
               </motion.div>
             ))}
           </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGetWishlist } from '@workspace/api-client-react';
-import { Menu, X, Heart, User as UserIcon, MessageCircle } from 'lucide-react';
+import { useTripPlanner } from '@/hooks/useTripPlanner';
+import { Menu, X, Heart, User as UserIcon, MessageCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -14,12 +14,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const isHome = location === '/';
-
-  const { data: wishlistItems } = useGetWishlist({
-    query: { enabled: !!user }
-  });
-
-  const wishlistCount = wishlistItems?.length || 0;
+  const { count: tripCount } = useTripPlanner();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -31,7 +26,6 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -97,16 +91,23 @@ export default function Navbar() {
             Book via WhatsApp
           </a>
 
-          {user && (
-            <Link href="/wishlist" className={`relative p-2 transition-colors ${textClasses}`}>
-              <Heart className="w-5 h-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute top-0 right-0 w-4 h-4 bg-accent text-accent-foreground rounded-full text-[10px] font-bold flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-          )}
+          {/* My Trip — always visible */}
+          <Link
+            href="/my-trip"
+            className={`relative flex items-center gap-1.5 text-sm font-medium py-2 px-3 rounded-xl transition-colors ${
+              location === '/my-trip'
+                ? (isTransparent ? 'bg-white/15 text-white' : 'bg-primary/8 text-primary')
+                : (isTransparent ? 'text-white/90 hover:bg-white/10' : 'text-foreground hover:bg-muted')
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${tripCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+            <span>My Trip</span>
+            {tripCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">
+                {tripCount > 9 ? '9+' : tripCount}
+              </span>
+            )}
+          </Link>
 
           {user ? (
             <DropdownMenu>
@@ -127,7 +128,7 @@ export default function Navbar() {
                   <Link href={getDashboardPath()} className="cursor-pointer w-full">Dashboard</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/wishlist" className="cursor-pointer w-full">Wishlist</Link>
+                  <Link href="/my-trip" className="cursor-pointer w-full">My Trip</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()} className="text-destructive cursor-pointer">
@@ -142,22 +143,30 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          className={`md:hidden p-2 rounded-lg transition-colors ${isTransparent ? 'text-white hover:bg-white/10' : 'text-foreground hover:bg-muted'}`}
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {isMobileMenuOpen
-            ? <X className="w-6 h-6" />
-            : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Mobile: My Trip icon + hamburger */}
+        <div className="flex md:hidden items-center gap-2">
+          <Link href="/my-trip" className={`relative p-2 rounded-lg transition-colors ${isTransparent ? 'text-white hover:bg-white/10' : 'text-foreground hover:bg-muted'}`}>
+            <Heart className={`w-5 h-5 ${tripCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+            {tripCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">
+                {tripCount > 9 ? '9+' : tripCount}
+              </span>
+            )}
+          </Link>
+          <button
+            className={`p-2 rounded-lg transition-colors ${isTransparent ? 'text-white hover:bg-white/10' : 'text-foreground hover:bg-muted'}`}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Nav — smooth slide-down */}
+      {/* Mobile Nav */}
       <div
         className={`md:hidden bg-background border-b border-border shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${
-          isMobileMenuOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0'
+          isMobileMenuOpen ? 'max-h-[480px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="px-4 pt-3 pb-5 flex flex-col gap-1">
@@ -171,7 +180,19 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* WhatsApp CTA in mobile menu */}
+          <Link
+            href="/my-trip"
+            className={`text-base font-medium py-3 px-3 rounded-xl transition-colors flex items-center justify-between ${location === '/my-trip' ? 'bg-primary/8 text-primary' : 'text-foreground hover:bg-muted'}`}
+          >
+            <span className="flex items-center gap-2">
+              <Heart className={`w-4 h-4 ${tripCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+              My Trip
+            </span>
+            {tripCount > 0 && (
+              <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">{tripCount}</span>
+            )}
+          </Link>
+
           <a
             href={WA_URL}
             target="_blank"
@@ -187,12 +208,6 @@ export default function Navbar() {
               <Link href={getDashboardPath()} className="text-base font-medium py-3 px-3 rounded-xl text-foreground hover:bg-muted">
                 Dashboard
               </Link>
-              {wishlistCount > 0 && (
-                <Link href="/wishlist" className="text-base font-medium py-3 px-3 rounded-xl text-foreground hover:bg-muted flex items-center justify-between">
-                  Wishlist
-                  <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs">{wishlistCount}</span>
-                </Link>
-              )}
               <button onClick={() => logout()} className="text-base font-medium text-destructive text-left py-3 px-3 rounded-xl hover:bg-muted/60">
                 Log out
               </button>

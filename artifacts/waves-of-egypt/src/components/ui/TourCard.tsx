@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { Star, Clock, Car, MessageCircle } from 'lucide-react';
+import { Star, Clock, Car, MessageCircle, Heart } from 'lucide-react';
 import type { Tour } from '@workspace/api-client-react';
+import { useTripPlanner } from '@/hooks/useTripPlanner';
 
 interface TourCardProps {
   tour: Tour;
@@ -11,6 +12,9 @@ interface TourCardProps {
 }
 
 export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps) {
+  const { toggleTour, isSaved } = useTripPlanner();
+  const saved = isSaved(tour.id);
+
   const whatsappMsg = encodeURIComponent(
     `Hello, I would like to book the ${tour.title}. Could you please send me the available dates and price?`
   );
@@ -19,8 +23,13 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
     ? Math.round((1 - tour.discountPrice / tour.price) * 100)
     : 0;
 
+  function handleToggleSave(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleTour(tour);
+  }
+
   if (horizontal) {
-    // Wide card for horizontal scroll (best sellers row)
     return (
       <motion.div
         initial={{ opacity: 0, x: 30 }}
@@ -31,7 +40,7 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
         whileTap={{ scale: 0.98 }}
         className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-border/50 w-72 shrink-0"
       >
-        {/* Image — locked 16:9 */}
+        {/* Image */}
         <div className="relative aspect-[16/9] overflow-hidden">
           <img
             src={tour.coverImage}
@@ -51,6 +60,14 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
               </span>
             )}
           </div>
+          {/* Heart save button */}
+          <button
+            onClick={handleToggleSave}
+            aria-label={saved ? 'Remove from My Trip' : 'Save to My Trip'}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow transition-all hover:scale-110 z-10"
+          >
+            <Heart className={`w-4 h-4 transition-colors ${saved ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+          </button>
         </div>
 
         {/* Body */}
@@ -128,7 +145,7 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
       whileTap={{ scale: 0.98 }}
       className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-border/50"
     >
-      {/* Image — locked 16:9 */}
+      {/* Image */}
       <div className="relative aspect-[16/9] overflow-hidden">
         <img
           src={tour.coverImage}
@@ -153,9 +170,17 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
             </span>
           )}
         </div>
+        {/* Heart save button */}
+        <button
+          onClick={handleToggleSave}
+          aria-label={saved ? 'Remove from My Trip' : 'Save to My Trip'}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow transition-all hover:scale-110 z-10"
+        >
+          <Heart className={`w-4 h-4 transition-colors ${saved ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+        </button>
       </div>
 
-      {/* Body — flex col so footer always at bottom */}
+      {/* Body */}
       <div className="p-4 flex flex-col flex-1">
         <p className="text-xs text-muted-foreground mb-1">{tour.categoryName}</p>
         <h3 className="font-semibold text-base leading-snug mb-2 text-foreground line-clamp-2">
@@ -179,7 +204,6 @@ export function TourCard({ tour, index = 0, horizontal = false }: TourCardProps)
           </div>
         )}
 
-        {/* Pushes price + buttons to the bottom */}
         <div className="mt-auto pt-3 border-t border-border">
           <div className="mb-3">
             <span className="text-xs text-muted-foreground">From</span>
