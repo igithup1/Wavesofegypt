@@ -13,7 +13,12 @@ import {
   UpdateBookingResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthRequest } from "../lib/auth";
-import { sendBookingConfirmationEmail, sendBookingConfirmationEmailStrict } from "../lib/email";
+import {
+  sendBookingConfirmationEmail,
+  sendBookingConfirmationEmailStrict,
+  sendBookingCancelledEmail,
+  sendBookingStatusUpdateEmail,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -254,6 +259,19 @@ router.patch("/bookings/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Fetch current booking before update so we can detect status changes
+  const [existing] = await db
+    .select({ status: bookingsTable.status })
+    .from(bookingsTable)
+    .where(eq(bookingsTable.id, params.data.id));
+
+  if (!existing) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  const previousStatus = existing.status;
+
   const [booking] = await db
     .update(bookingsTable)
     .set(parsed.data)
@@ -271,6 +289,32 @@ router.patch("/bookings/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(UpdateBookingResponse.parse(
     formatBooking(booking, tour?.title, tour?.coverImage, bookingUser?.name)
   ));
+
+  // Send status-change email non-blocking, after the response is flushed
+  const newStatus = booking.status;
+  if (newStatus !== previousStatus && bookingUser) {
+    const bookingRef = `WOE-${String(booking.id).padStart(5, "0")}`;
+    const bookingDate = new Date(booking.date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const emailData = {
+      travelerName: bookingUser.name ?? "Traveler",
+      travelerEmail: bookingUser.email,
+      bookingRef,
+      tourName: tour?.title ?? `Tour #${booking.tourId}`,
+      date: bookingDate,
+      participants: booking.participants,
+      totalPrice: Number(booking.totalPrice),
+    };
+
+    if (newStatus === "cancelled") {
+      sendBookingCancelledEmail(emailData).catch(() => {/* already logged */});
+    } else {
+      sendBookingStatusUpdateEmail({ ...emailData, newStatus }).catch(() => {/* already logged */});
+    }
+  }
 });
 
 router.post("/bookings/:id/resend-confirmation", requireAuth, async (req, res): Promise<void> => {
