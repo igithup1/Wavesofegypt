@@ -149,8 +149,13 @@ export default function AdminDashboard() {
   React.useEffect(() => { setPage(0); }, [statusFilter, dateFrom, dateTo]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: dashboard, isLoading: isDashLoading } = useGetAdminDashboard({
-    query: { enabled: !!user && user.role === 'admin' } as any,
+  const { data: dashboard, isLoading: isDashLoading, dataUpdatedAt: dashDataUpdatedAt } = useGetAdminDashboard({
+    query: {
+      enabled: !!user && user.role === 'admin',
+      // Auto-poll every 30 s while the Overview tab is active
+      refetchInterval: activeTab === 'overview' ? 30_000 : false,
+      refetchIntervalInBackground: false,
+    } as any,
   });
 
   // Paginated bookings query — uses server-side date + status filtering
@@ -197,6 +202,14 @@ export default function AdminDashboard() {
     if (secondsAgo < 5) return 'just now';
     if (secondsAgo < 60) return `${secondsAgo}s ago`;
     return `${Math.floor(secondsAgo / 60)}m ago`;
+  })();
+
+  const dashSecondsAgo = dashDataUpdatedAt ? Math.floor((Date.now() - dashDataUpdatedAt) / 1_000) : null;
+  const dashLastUpdatedLabel = (() => {
+    if (dashSecondsAgo === null) return null;
+    if (dashSecondsAgo < 5) return 'just now';
+    if (dashSecondsAgo < 60) return `${dashSecondsAgo}s ago`;
+    return `${Math.floor(dashSecondsAgo / 60)}m ago`;
   })();
 
   React.useEffect(() => {
@@ -294,6 +307,15 @@ export default function AdminDashboard() {
         {/* ── OVERVIEW TAB ── */}
         {activeTab === 'overview' && (
           <>
+            {/* Last updated indicator */}
+            {dashLastUpdatedLabel && (
+              <div className="flex justify-end mb-4">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+                  <RefreshCw className="w-3 h-3" />
+                  Stats updated {dashLastUpdatedLabel} · auto-refreshes every 30s
+                </span>
+              </div>
+            )}
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
               <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
