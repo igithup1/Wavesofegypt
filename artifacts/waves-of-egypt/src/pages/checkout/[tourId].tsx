@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { useGetTour, useCreateBooking, useGetMe } from '@workspace/api-client-react';
+import { useGetTour, useCreateBooking, useGetMe, useListBookings } from '@workspace/api-client-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Users, CreditCard, ShieldCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, CreditCard, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -28,7 +28,21 @@ export default function Checkout() {
   const [participants, setParticipants] = useState(1);
   const [notes, setNotes] = useState('');
   const [capacityError, setCapacityError] = useState<string | null>(null);
-  
+
+  // Fetch existing bookings so we can disable already-booked dates in the picker
+  const { data: myBookings } = useListBookings(
+    { limit: 100 },
+    { query: { enabled: !!user } } as any,
+  );
+  const bookedDatesForTour: Set<string> = new Set(
+    (myBookings ?? [])
+      .filter((b) => b.tourId === tourId && b.status !== 'cancelled')
+      .map((b) => (typeof b.date === 'string' ? b.date : new Date(b.date).toISOString().split('T')[0])),
+  );
+
+  const selectedDateStr = date ? format(date, 'yyyy-MM-dd') : null;
+  const selectedDateAlreadyBooked = selectedDateStr ? bookedDatesForTour.has(selectedDateStr) : false;
+
   const createBookingMutation = useCreateBooking();
 
   const pricePerPerson = tour?.discountPrice || tour?.price || 0;
@@ -146,12 +160,22 @@ export default function Checkout() {
                           mode="single"
                           selected={date}
                           onSelect={(d) => { setDate(d); setCapacityError(null); }}
-                          disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                          disabled={(d) => {
+                            if (d < new Date() || d < new Date("1900-01-01")) return true;
+                            const ds = format(d, 'yyyy-MM-dd');
+                            return bookedDatesForTour.has(ds);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-                    {capacityError && (
+                    {selectedDateAlreadyBooked && (
+                      <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-amber-800 font-medium">You've already booked this date. Please pick a different one.</p>
+                      </div>
+                    )}
+                    {capacityError && !selectedDateAlreadyBooked && (
                       <p className="text-sm text-destructive font-medium">{capacityError}</p>
                     )}
                   </div>
@@ -281,7 +305,7 @@ export default function Checkout() {
                   <Button 
                     type="submit"
                     className="w-full h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl"
-                    disabled={createBookingMutation.isPending}
+                    disabled={createBookingMutation.isPending || selectedDateAlreadyBooked}
                   >
                     {createBookingMutation.isPending ? 'Processing...' : 'Confirm Booking'}
                   </Button>

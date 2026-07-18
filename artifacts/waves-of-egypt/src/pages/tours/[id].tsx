@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useRoute, Link } from 'wouter';
-import { useGetTour, useListTours, useListReviews, useCreateReview, getGetTourQueryKey } from '@workspace/api-client-react';
+import { useGetTour, useListTours, useListReviews, useCreateReview, getGetTourQueryKey, useGetMe, useListBookings } from '@workspace/api-client-react';
 import { useTripPlanner } from '@/hooks/useTripPlanner';
 import Layout from '@/components/layout/Layout';
 import { TourCard } from '@/components/ui/TourCard';
 import {
   MapPin, Clock, Star, Users, Check, X, Calendar as CalendarIcon,
   Info, ChevronDown, ChevronUp, MessageCircle, Shield, Zap,
-  Car, Award, Share2, Heart, ChevronLeft, ChevronRight, Play
+  Car, Award, Share2, Heart, ChevronLeft, ChevronRight, Play, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -228,6 +228,16 @@ export default function TourDetail() {
     categoryId: tour?.categoryId,
     limit: 4,
   } as any, { query: { enabled: !!tour?.categoryId } } as any);
+
+  // Check if logged-in traveler already has bookings for this tour
+  const { data: currentUser } = useGetMe({ query: { retry: false } } as any);
+  const { data: myBookings } = useListBookings(
+    { limit: 100 },
+    { query: { enabled: !!currentUser && !!id } } as any,
+  );
+  const existingBookingsForTour = (myBookings ?? []).filter(
+    (b) => b.tourId === id && b.status !== 'cancelled',
+  );
 
   if (isLoading) {
     return (
@@ -614,6 +624,26 @@ export default function TourDetail() {
                     <span className="text-muted-foreground">({tour.reviewCount} reviews)</span>
                   </div>
                 </div>
+
+                {existingBookingsForTour.length > 0 && (
+                  <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800">You've already booked this tour</p>
+                        <ul className="mt-1 space-y-0.5">
+                          {existingBookingsForTour.map((b) => (
+                            <li key={b.id} className="text-xs text-amber-700">
+                              {new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {' '}· {b.participants} {b.participants === 1 ? 'person' : 'people'} · <span className="capitalize">{b.status}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-amber-600 mt-1.5">You can still book a different date.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <Button asChild className="w-full h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl mb-3">
                   <Link href={`/checkout/${tour.id}`}>Select Date & Book</Link>
