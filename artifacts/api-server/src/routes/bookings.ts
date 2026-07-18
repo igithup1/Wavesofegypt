@@ -108,6 +108,32 @@ router.post("/bookings", requireAuth, async (req, res): Promise<void> => {
       return null;
     }
 
+    // Check for duplicate: reject if this user already has a non-cancelled
+    // booking for the same tour on the same date.
+    const [existingBooking] = await tx
+      .select({ id: bookingsTable.id })
+      .from(bookingsTable)
+      .where(
+        and(
+          eq(bookingsTable.tourId, tourId),
+          eq(bookingsTable.userId, user.id),
+          eq(bookingsTable.date, dateStr),
+          ne(bookingsTable.status, "cancelled")
+        )
+      )
+      .limit(1);
+
+    if (existingBooking) {
+      capacityError = {
+        status: 409,
+        body: {
+          code: "DUPLICATE_BOOKING",
+          error: "You already have a booking for this date.",
+        },
+      };
+      return null;
+    }
+
     // Check capacity: sum non-cancelled participants for this tour + date.
     if (tour.maxParticipants != null) {
       const [capacityRow] = await tx
