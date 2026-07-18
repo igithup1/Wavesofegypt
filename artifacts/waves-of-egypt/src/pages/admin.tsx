@@ -1,16 +1,16 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGetAdminDashboard, useListBookings, useUpdateBooking } from '@workspace/api-client-react';
+import { useGetAdminDashboard, useListBookings, useUpdateBooking, useListReviews, getListReviewsQueryKey, getGetTourQueryKey } from '@workspace/api-client-react';
 import Layout from '@/components/layout/Layout';
 import { Link, useLocation } from 'wouter';
-import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send } from 'lucide-react';
+import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send, Star, Trash2, MessageSquare, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListBookingsQueryKey } from '@workspace/api-client-react';
 import type { Booking } from '@workspace/api-client-react';
 
 type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
-type TabKey = 'overview' | 'bookings' | 'tours' | 'email';
+type TabKey = 'overview' | 'bookings' | 'tours' | 'reviews' | 'email';
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Pending',
@@ -193,6 +193,7 @@ export default function AdminDashboard() {
     { key: 'overview', label: 'Overview', icon: <Activity className="w-4 h-4" /> },
     { key: 'bookings', label: 'Bookings', icon: <CreditCard className="w-4 h-4" /> },
     { key: 'tours',    label: 'By Tour',  icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'reviews',  label: 'Reviews',  icon: <Star className="w-4 h-4" /> },
     { key: 'email',    label: 'Email',    icon: <Mail className="w-4 h-4" /> },
   ];
 
@@ -621,6 +622,11 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+        {/* ── REVIEWS TAB ── */}
+        {activeTab === 'reviews' && (
+          <ReviewsPanel />
+        )}
+
         {/* ── EMAIL SETTINGS TAB ── */}
         {activeTab === 'email' && (
           <EmailSettingsPanel adminEmail={user?.email ?? ''} />
@@ -628,6 +634,259 @@ export default function AdminDashboard() {
 
       </div>
     </Layout>
+  );
+}
+
+// ── Reviews Moderation Panel ─────────────────────────────────────────────────
+
+function ReviewsPanel() {
+  const queryClient = useQueryClient();
+  const [tourIdFilter, setTourIdFilter] = React.useState('');
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
+  const [editingId, setEditingId] = React.useState<number | null>(null);
+  const [editRating, setEditRating] = React.useState(5);
+  const [editComment, setEditComment] = React.useState('');
+  const [actionResult, setActionResult] = React.useState<{ ok: boolean; message: string } | null>(null);
+
+  const parsedTourId = tourIdFilter ? parseInt(tourIdFilter, 10) : undefined;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: reviews, isLoading, refetch } = useListReviews(
+    { tourId: parsedTourId, limit: 100 } as any,
+    { query: { enabled: true } } as any,
+  );
+
+  const handleDelete = async (reviewId: number, tourId: number) => {
+    if (!confirm('Delete this review? This will recalculate the tour rating immediately.')) return;
+    setDeletingId(reviewId);
+    setActionResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const resp = await fetch(`/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setActionResult({ ok: true, message: 'Review deleted and tour rating recalculated.' });
+        // Invalidate reviews list and the specific tour so the tour page updates immediately
+        queryClient.invalidateQueries({ queryKey: getListReviewsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTourQueryKey(tourId) });
+        refetch();
+      } else {
+        setActionResult({ ok: false, message: data.error ?? 'Failed to delete review.' });
+      }
+    } catch {
+      setActionResult({ ok: false, message: 'Network error.' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openEdit = (review: { id: number; rating: number; comment?: string | null }) => {
+    setEditingId(review.id);
+    setEditRating(Math.round(review.rating));
+    setEditComment(review.comment ?? '');
+    setActionResult(null);
+  };
+
+  const handleEdit = async (reviewId: number, tourId: number) => {
+    setActionResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const resp = await fetch(`/api/reviews/${reviewId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ rating: editRating, comment: editComment }),
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setActionResult({ ok: true, message: 'Review updated and tour rating recalculated.' });
+        setEditingId(null);
+        // Invalidate reviews list and the specific tour so the tour page updates immediately
+        queryClient.invalidateQueries({ queryKey: getListReviewsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTourQueryKey(tourId) });
+        refetch();
+      } else {
+        setActionResult({ ok: false, message: data.error ?? 'Failed to update review.' });
+      }
+    } catch {
+      setActionResult({ ok: false, message: 'Network error.' });
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap items-end gap-4">
+        <div>
+          <h2 className="text-2xl font-serif font-bold mb-1">Review Moderation</h2>
+          <p className="text-muted-foreground text-sm">Delete or edit traveler reviews. Rating and count recalculate automatically.</p>
+        </div>
+        <div className="ml-auto flex items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Filter by Tour ID</label>
+            <input
+              type="number"
+              value={tourIdFilter}
+              onChange={e => setTourIdFilter(e.target.value)}
+              placeholder="Any tour"
+              className="text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 w-32"
+            />
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-2 bg-background hover:bg-muted/30 transition-all self-end"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {actionResult && (
+        <div className={`mb-4 flex items-start gap-3 p-4 rounded-xl border text-sm ${actionResult.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+          {actionResult.ok
+            ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
+            : <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+          }
+          {actionResult.message}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : !reviews || reviews.length === 0 ? (
+        <div className="p-12 text-center text-muted-foreground">
+          <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">No reviews found</p>
+          {tourIdFilter && <p className="text-sm mt-1">Try clearing the tour ID filter</p>}
+        </div>
+      ) : (
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-medium">ID</th>
+                  <th className="px-6 py-4 font-medium">Tour</th>
+                  <th className="px-6 py-4 font-medium">Reviewer</th>
+                  <th className="px-6 py-4 font-medium">Rating</th>
+                  <th className="px-6 py-4 font-medium">Comment</th>
+                  <th className="px-6 py-4 font-medium">Date</th>
+                  <th className="px-6 py-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(reviews as unknown as Array<{ id: number; tourId: number; tourTitle?: string | null; name?: string | null; country?: string | null; rating: number; comment?: string | null; createdAt: string }>).map(review => (
+                  <React.Fragment key={review.id}>
+                    <tr className="hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-muted-foreground">#{review.id}</td>
+                      <td className="px-6 py-4 max-w-[160px]">
+                        <Link href={`/tours/${review.tourId}`} className="hover:text-primary transition-colors font-medium truncate block" title={review.tourTitle ?? `Tour #${review.tourId}`}>
+                          {review.tourTitle ?? `Tour #${review.tourId}`}
+                        </Link>
+                        <span className="text-xs text-muted-foreground">ID {review.tourId}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="font-medium">{review.name ?? 'Anonymous'}</p>
+                        {review.country && <p className="text-xs text-muted-foreground">{review.country}</p>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <Star key={s} className={`w-3.5 h-3.5 ${s <= Math.round(review.rating) ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+                          ))}
+                          <span className="ml-1 text-xs text-muted-foreground">{review.rating.toFixed(1)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 max-w-[240px]">
+                        <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2">{review.comment ?? <em>No comment</em>}</p>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(review.createdAt), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(review)}
+                            disabled={deletingId === review.id}
+                            title="Edit review"
+                            className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors disabled:opacity-40"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(review.id, review.tourId)}
+                            disabled={deletingId === review.id}
+                            title="Delete review"
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-40"
+                          >
+                            {deletingId === review.id
+                              ? <RefreshCw className="w-4 h-4 animate-spin" />
+                              : <Trash2 className="w-4 h-4" />
+                            }
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {editingId === review.id && (
+                      <tr className="bg-blue-50/60 border-t border-blue-100">
+                        <td colSpan={7} className="px-6 py-5">
+                          <div className="flex flex-wrap items-end gap-4">
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Rating</label>
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map(s => (
+                                  <button key={s} type="button" onClick={() => setEditRating(s)} className="p-0.5">
+                                    <Star className={`w-6 h-6 transition-colors ${s <= editRating ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-[200px]">
+                              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Comment</label>
+                              <textarea
+                                value={editComment}
+                                onChange={e => setEditComment(e.target.value)}
+                                rows={2}
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                              />
+                            </div>
+                            <div className="flex gap-2 self-end">
+                              <button
+                                onClick={() => handleEdit(review.id, review.tourId)}
+                                className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="px-4 py-2 text-sm font-medium rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground bg-muted/20">
+            {reviews.length} review{reviews.length !== 1 ? 's' : ''} shown
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
