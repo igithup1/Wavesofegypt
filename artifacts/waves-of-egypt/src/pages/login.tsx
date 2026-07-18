@@ -20,6 +20,9 @@ export default function Login() {
     loginMutation.mutate({ data: { email, password } }, {
       onSuccess: (data) => {
         toast.success('Welcome back!');
+        // Persist the session token so generated API hooks can send it as a
+        // Bearer token on every request (including after page refresh).
+        localStorage.setItem('auth_token', data.token);
         queryClient.setQueryData(['/api/auth/me'], data.user);
         
         if (data.user.role === 'admin') setLocation('/admin');

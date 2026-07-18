@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
+        localStorage.removeItem('auth_token');
         queryClient.setQueryData(['/api/auth/me'], null);
         window.location.href = '/';
       }

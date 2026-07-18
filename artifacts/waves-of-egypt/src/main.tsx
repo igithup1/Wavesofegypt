@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { setBaseUrl } from '@workspace/api-client-react';
+import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 
 import App from './App';
 
@@ -19,5 +19,10 @@ if (rawApiUrl) {
     setBaseUrl(rawApiUrl.replace(/\/api\/?$/, ''));
   }
 }
+
+// Wire up the auth token so every generated API hook automatically sends
+// "Authorization: Bearer <token>" — without this, all authenticated endpoints
+// (admin dashboard, bookings, etc.) return 401 and show empty/zero data.
+setAuthTokenGetter(() => localStorage.getItem('auth_token'));
 
 createRoot(document.getElementById('root')!).render(<App />);
