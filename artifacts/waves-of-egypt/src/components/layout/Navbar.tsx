@@ -12,7 +12,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const isHome = location === '/';
   const { count: tripCount } = useTripPlanner();
 
@@ -124,11 +124,11 @@ export default function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href={getDashboardPath()} className="cursor-pointer w-full">Dashboard</Link>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(getDashboardPath())}>
+                  Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/my-trip" className="cursor-pointer w-full">My Trip</Link>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/my-trip')}>
+                  My Trip
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()} className="text-destructive cursor-pointer">
