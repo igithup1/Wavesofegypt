@@ -444,6 +444,19 @@ export default function TourDetail() {
               ))}
             </div>
 
+            {/* Meeting Point */}
+            {(tour as any).meetingPoint && (
+              <div className="flex gap-4 items-start bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900 rounded-2xl p-5">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1">Meeting Point</h3>
+                  <p className="text-sm text-foreground leading-relaxed">{(tour as any).meetingPoint}</p>
+                </div>
+              </div>
+            )}
+
             {/* Highlights */}
             {tour.highlights && tour.highlights.length > 0 && (
               <section id="highlights">
