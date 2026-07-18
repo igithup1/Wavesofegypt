@@ -15,12 +15,14 @@ import {
   Platform,
   Alert,
   KeyboardAvoidingView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLogin, useRegister } from '@workspace/api-client-react';
+import { useLogin, useRegister, useListBookings } from '@workspace/api-client-react';
+import type { Booking } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetWishlistQueryKey } from '@workspace/api-client-react';
 
@@ -35,6 +37,137 @@ function showAlert(title: string, message: string) {
   } else {
     Alert.alert(title, message);
   }
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatPrice(price: number): string {
+  return `$${price.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+}
+
+// ---------------------------------------------------------------------------
+// Booking card
+// ---------------------------------------------------------------------------
+
+function BookingCard({ booking, colors }: { booking: Booking; colors: ReturnType<typeof useColors> }) {
+  const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+    confirmed: { label: 'Confirmed', bg: '#D1FAE5', text: '#065F46' },
+    pending:   { label: 'Pending',   bg: '#FEF3C7', text: '#92400E' },
+    cancelled: { label: 'Cancelled', bg: '#FEE2E2', text: '#991B1B' },
+    completed: { label: 'Completed', bg: '#E0E7FF', text: '#3730A3' },
+  };
+
+  const status = statusConfig[booking.status] ?? { label: booking.status, bg: colors.muted, text: colors.mutedForeground };
+
+  return (
+    <View style={[bookingStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* Cover image strip */}
+      {booking.tourCoverImage ? (
+        <Image
+          source={{ uri: booking.tourCoverImage }}
+          style={bookingStyles.coverImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[bookingStyles.coverPlaceholder, { backgroundColor: colors.muted }]}>
+          <Feather name="map" size={20} color={colors.mutedForeground} />
+        </View>
+      )}
+
+      <View style={bookingStyles.cardBody}>
+        {/* Tour name + status badge */}
+        <View style={bookingStyles.cardHeader}>
+          <Text style={[bookingStyles.tourName, { color: colors.foreground }]} numberOfLines={2}>
+            {booking.tourTitle ?? `Tour #${booking.tourId}`}
+          </Text>
+          <View style={[bookingStyles.statusBadge, { backgroundColor: status.bg }]}>
+            <Text style={[bookingStyles.statusText, { color: status.text }]}>{status.label}</Text>
+          </View>
+        </View>
+
+        {/* Details row */}
+        <View style={bookingStyles.detailsRow}>
+          <View style={bookingStyles.detailItem}>
+            <Feather name="calendar" size={13} color={colors.mutedForeground} />
+            <Text style={[bookingStyles.detailText, { color: colors.mutedForeground }]}>
+              {formatDate(booking.date)}
+            </Text>
+          </View>
+          <View style={bookingStyles.detailItem}>
+            <Feather name="users" size={13} color={colors.mutedForeground} />
+            <Text style={[bookingStyles.detailText, { color: colors.mutedForeground }]}>
+              {booking.participants} {booking.participants === 1 ? 'person' : 'people'}
+            </Text>
+          </View>
+          <View style={bookingStyles.detailItem}>
+            <Feather name="tag" size={13} color={colors.secondary} />
+            <Text style={[bookingStyles.detailPrice, { color: colors.secondary }]}>
+              {formatPrice(booking.totalPrice)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Bookings section
+// ---------------------------------------------------------------------------
+
+function BookingsSection({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const { data: bookings, isLoading, isError } = useListBookings({ limit: 50 });
+
+  return (
+    <View style={bookingStyles.section}>
+      {/* Section heading */}
+      <View style={bookingStyles.sectionHeader}>
+        <Feather name="briefcase" size={17} color={colors.secondary} />
+        <Text style={[bookingStyles.sectionTitle, { color: colors.foreground }]}>My Bookings</Text>
+      </View>
+
+      {isLoading && (
+        <View style={bookingStyles.centered}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      )}
+
+      {isError && (
+        <View style={[bookingStyles.emptyState, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+          <Feather name="alert-circle" size={22} color={colors.mutedForeground} />
+          <Text style={[bookingStyles.emptyTitle, { color: colors.foreground }]}>Couldn't load bookings</Text>
+          <Text style={[bookingStyles.emptySubtitle, { color: colors.mutedForeground }]}>
+            Check your connection and try again.
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && bookings && bookings.length === 0 && (
+        <View style={[bookingStyles.emptyState, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+          <Feather name="compass" size={28} color={colors.mutedForeground} />
+          <Text style={[bookingStyles.emptyTitle, { color: colors.foreground }]}>No bookings yet</Text>
+          <Text style={[bookingStyles.emptySubtitle, { color: colors.mutedForeground }]}>
+            Browse our tours and book your next Egyptian adventure.
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && bookings && bookings.length > 0 && (
+        <View style={bookingStyles.bookingsList}>
+          {bookings.map((b) => (
+            <BookingCard key={b.id} booking={b} colors={colors} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +231,11 @@ function ProfileLoggedIn() {
       {/* Info cards */}
       <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <InfoRow icon="mail" label="Email" value={user?.email ?? '—'} colors={colors} />
+      </View>
+
+      {/* Bookings section */}
+      <View style={styles.bookingsWrapper}>
+        <BookingsSection colors={colors} />
       </View>
 
       {/* Sign-out button */}
@@ -486,6 +624,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
+  bookingsWrapper: {
+    width: '100%',
+  },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -568,6 +709,114 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   toggleLink: {
+    fontWeight: '700',
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Booking-specific styles
+// ---------------------------------------------------------------------------
+
+const bookingStyles = StyleSheet.create({
+  section: {
+    width: '100%',
+    gap: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'PlayfairDisplay_700Bold',
+  },
+  centered: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    maxWidth: 260,
+  },
+  bookingsList: {
+    gap: 12,
+  },
+  card: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  coverImage: {
+    width: '100%',
+    height: 100,
+  },
+  coverPlaceholder: {
+    width: '100%',
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardBody: {
+    padding: 14,
+    gap: 8,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  tourName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  detailPrice: {
+    fontSize: 13,
     fontWeight: '700',
   },
 });
