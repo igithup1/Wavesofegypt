@@ -366,21 +366,41 @@ export default function TourDetailScreen() {
             <Text style={[styles.ctaFrom, { color: colors.mutedForeground }]}>/pp</Text>
           </View>
         </View>
-        <Pressable
-          onPress={handleWhatsApp}
-          style={({ pressed }) => [
-            styles.bookBtn,
-            {
-              backgroundColor: pressed ? '#1DA851' : '#25D366',
-              borderRadius: colors.radius,
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
-          <Text style={styles.bookBtnText}>Book via WhatsApp</Text>
-        </Pressable>
+        <View style={styles.ctaBtns}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push(`/tour/book/${tourId}` as any);
+            }}
+            style={({ pressed }) => [
+              styles.bookBtn,
+              {
+                backgroundColor: colors.primary,
+                borderRadius: colors.radius,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+                flex: 1,
+              },
+            ]}
+          >
+            <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.bookBtnText}>Book Now</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleWhatsApp}
+            style={({ pressed }) => [
+              styles.whatsappBtn,
+              {
+                backgroundColor: pressed ? '#1DA851' : '#25D366',
+                borderRadius: colors.radius,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -619,11 +639,24 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
+  ctaBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
   bookBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  whatsappBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 50,
     paddingVertical: 14,
   },
   bookBtnText: {
