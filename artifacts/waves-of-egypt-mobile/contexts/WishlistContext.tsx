@@ -117,10 +117,16 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }, [apiSuccess]);
 
+  // API mutations — fire and forget.
+  const { mutate: addToApi } = useAddToWishlist();
+  const { mutate: removeFromApi } = useRemoveFromWishlist();
+
   // Merge API list into local state the first time it loads successfully.
   // API data is authoritative — it always has the latest price, title, and
   // cover image. Local-only tours (saved offline / not yet synced) are
   // appended after the API list so nothing is lost.
+  // Local-only tours are also pushed to the API so the server-side wishlist
+  // stays in sync across devices (best-effort, same as regular toggles).
   useEffect(() => {
     if (!apiSuccess || !apiWishlist || mergedApiRef.current) return;
     mergedApiRef.current = true;
@@ -129,16 +135,16 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       const apiIds = new Set(apiWishlist.map((t) => t.id));
       // Keep local tours that the API doesn't know about yet (e.g. offline saves).
       const localOnly = prev.filter((t) => !apiIds.has(t.id));
+      // Push each local-only tour to the API best-effort so it syncs across devices.
+      for (const tour of localOnly) {
+        addToApi({ data: { tourId: tour.id } });
+      }
       // API tours come first (fresh data); local-only tours are appended.
       const merged = [...apiWishlist, ...localOnly];
       saveToStorage(merged);
       return merged;
     });
-  }, [apiSuccess, apiWishlist]);
-
-  // API mutations — fire and forget.
-  const { mutate: addToApi } = useAddToWishlist();
-  const { mutate: removeFromApi } = useRemoveFromWishlist();
+  }, [apiSuccess, apiWishlist, addToApi]);
 
   const toggle = useCallback(
     (tour: Tour): boolean => {
