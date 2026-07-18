@@ -118,16 +118,19 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [apiSuccess]);
 
   // Merge API list into local state the first time it loads successfully.
+  // API data is authoritative — it always has the latest price, title, and
+  // cover image. Local-only tours (saved offline / not yet synced) are
+  // appended after the API list so nothing is lost.
   useEffect(() => {
     if (!apiSuccess || !apiWishlist || mergedApiRef.current) return;
     mergedApiRef.current = true;
 
     setSavedTours((prev) => {
-      const prevIds = new Set(prev.map((t) => t.id));
-      const merged = [
-        ...apiWishlist.filter((t) => !prevIds.has(t.id)),
-        ...prev,
-      ];
+      const apiIds = new Set(apiWishlist.map((t) => t.id));
+      // Keep local tours that the API doesn't know about yet (e.g. offline saves).
+      const localOnly = prev.filter((t) => !apiIds.has(t.id));
+      // API tours come first (fresh data); local-only tours are appended.
+      const merged = [...apiWishlist, ...localOnly];
       saveToStorage(merged);
       return merged;
     });
