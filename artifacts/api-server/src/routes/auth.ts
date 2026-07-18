@@ -56,7 +56,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     },
     token,
   };
-  res.json({ ...LoginResponse.parse({ user: responseData.user }), token });
+  res.json(LoginResponse.parse({ user: responseData.user, token }));
 });
 
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -93,7 +93,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       createdAt: user.createdAt.toISOString(),
     },
   };
-  res.status(201).json(RegisterResponse.parse({ ...responseData, token }));
+  res.status(201).json(RegisterResponse.parse({ user: responseData.user, token }));
 });
 
 router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
