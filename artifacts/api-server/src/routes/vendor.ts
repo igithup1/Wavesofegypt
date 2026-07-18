@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and, inArray } from "drizzle-orm";
 import { db, toursTable, bookingsTable, reviewsTable, usersTable } from "@workspace/db";
 import {
   GetVendorDashboardResponse,
@@ -7,6 +7,9 @@ import {
   GetAdminDashboardResponse,
   ListUsersQueryParams,
   ListUsersResponse,
+  UpdateUserBody,
+  UpdateUserResponse,
+  DeleteUserResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { sendBookingConfirmationEmailStrict } from "../lib/email";
@@ -111,22 +114,106 @@ router.get("/admin/dashboard", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.get("/admin/users", requireAuth, async (req, res): Promise<void> => {
+  const requester = (req as AuthRequest).user;
+  if (requester.role !== "admin") { res.status(403).json({ error: "Admin access required" }); return; }
+
   const query = ListUsersQueryParams.safeParse(req.query);
   const params = query.success ? query.data : {};
-  const limit = params.limit ? Number(params.limit) : 50;
+  const limit = params.limit ? Number(params.limit) : 200;
   const offset = params.offset ? Number(params.offset) : 0;
 
-  let users;
-  if (params.role) {
-    users = await db.select().from(usersTable).where(eq(usersTable.role, params.role)).limit(limit).offset(offset);
-  } else {
-    users = await db.select().from(usersTable).limit(limit).offset(offset);
+  // Build where clause from role + status filters
+  const conditions = [];
+  if (params.role) conditions.push(eq(usersTable.role, params.role));
+  if (params.status) conditions.push(eq(usersTable.status, params.status));
+
+  const users = conditions.length > 0
+    ? await db.select().from(usersTable).where(and(...conditions)).limit(limit).offset(offset)
+    : await db.select().from(usersTable).limit(limit).offset(offset);
+
+  // Fetch tour counts for vendor users in one query
+  const vendorIds = users.filter(u => u.role === "vendor").map(u => u.id);
+  const tourCounts: Record<number, number> = {};
+  if (vendorIds.length > 0) {
+    const rows = await db
+      .select({ vendorId: toursTable.vendorId, count: sql<number>`count(*)::int` })
+      .from(toursTable)
+      .where(inArray(toursTable.vendorId, vendorIds))
+      .groupBy(toursTable.vendorId);
+    for (const row of rows) {
+      if (row.vendorId != null) tourCounts[row.vendorId] = Number(row.count);
+    }
   }
 
   res.json(ListUsersResponse.parse(users.map((u) => ({
-    id: u.id, email: u.email, name: u.name, role: u.role as "customer" | "vendor" | "admin",
-    avatar: u.avatar, phone: u.phone, createdAt: u.createdAt.toISOString(),
+    id: u.id, email: u.email, name: u.name,
+    role: u.role as "customer" | "vendor" | "admin",
+    status: (u.status ?? "active") as "active" | "suspended" | "pending_approval",
+    avatar: u.avatar, phone: u.phone,
+    createdAt: u.createdAt.toISOString(),
+    tourCount: tourCounts[u.id] ?? 0,
   }))));
+});
+
+router.patch("/admin/users/:id", requireAuth, async (req, res): Promise<void> => {
+  const requester = (req as AuthRequest).user;
+  if (requester.role !== "admin") { res.status(403).json({ error: "Admin access required" }); return; }
+
+  const userId = parseInt(String(req.params.id), 10);
+  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+  const body = UpdateUserBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (body.data.role !== undefined) updates.role = body.data.role;
+  if (body.data.status !== undefined) updates.status = body.data.status;
+
+  if (Object.keys(updates).length === 1) { res.status(400).json({ error: "Nothing to update" }); return; }
+
+  // Prevent removing the last admin
+  if (body.data.role && body.data.role !== "admin") {
+    const [existing] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId));
+    if (existing?.role === "admin") {
+      const [adminCount] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.role, "admin"));
+      if (Number(adminCount?.count ?? 0) <= 1) {
+        res.status(400).json({ error: "Cannot demote the last admin account" }); return;
+      }
+    }
+  }
+
+  const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
+  if (!updated) { res.status(404).json({ error: "User not found" }); return; }
+
+  res.json(UpdateUserResponse.parse({
+    id: updated.id, email: updated.email, name: updated.name,
+    role: updated.role as "customer" | "vendor" | "admin",
+    status: (updated.status ?? "active") as "active" | "suspended" | "pending_approval",
+    avatar: updated.avatar, phone: updated.phone,
+    createdAt: updated.createdAt.toISOString(),
+  }));
+});
+
+router.delete("/admin/users/:id", requireAuth, async (req, res): Promise<void> => {
+  const requester = (req as AuthRequest).user;
+  if (requester.role !== "admin") { res.status(403).json({ error: "Admin access required" }); return; }
+
+  const userId = parseInt(String(req.params.id), 10);
+  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
+  if (userId === requester.id) { res.status(400).json({ error: "Cannot delete your own account" }); return; }
+
+  // Guard: don't delete the last admin
+  const [target] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId));
+  if (!target) { res.status(404).json({ error: "User not found" }); return; }
+  if (target.role === "admin") {
+    const [adminCount] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.role, "admin"));
+    if (Number(adminCount?.count ?? 0) <= 1) {
+      res.status(400).json({ error: "Cannot delete the last admin account" }); return;
+    }
+  }
+
+  await db.delete(usersTable).where(eq(usersTable.id, userId));
+  res.json(DeleteUserResponse.parse({ message: "User deleted" }));
 });
 
 /**

@@ -8,6 +8,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
   role: text("role").notNull().default("customer"), // customer | vendor | admin
+  status: text("status").notNull().default("active"), // active | suspended | pending_approval
   avatar: text("avatar"),
   phone: text("phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

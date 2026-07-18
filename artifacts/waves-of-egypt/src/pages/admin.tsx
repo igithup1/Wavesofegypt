@@ -3,14 +3,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGetAdminDashboard, useListBookings, useUpdateBooking, useListReviews, getListReviewsQueryKey, getGetTourQueryKey } from '@workspace/api-client-react';
 import Layout from '@/components/layout/Layout';
 import { Link, useLocation } from 'wouter';
-import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send, Star, Trash2, MessageSquare, Pencil } from 'lucide-react';
+import { Users, Building2, Map, CreditCard, Activity, ChevronDown, Calendar, Filter, RefreshCw, BarChart3, Mail, CheckCircle2, XCircle, Send, Star, Trash2, MessageSquare, Pencil, Search, Shield, UserX, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListBookingsQueryKey } from '@workspace/api-client-react';
 import type { Booking } from '@workspace/api-client-react';
 
 type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
-type TabKey = 'overview' | 'bookings' | 'tours' | 'reviews' | 'email';
+type TabKey = 'overview' | 'bookings' | 'tours' | 'reviews' | 'email' | 'users';
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Pending',
@@ -265,6 +265,7 @@ export default function AdminDashboard() {
     { key: 'bookings', label: 'Bookings', icon: <CreditCard className="w-4 h-4" /> },
     { key: 'tours',    label: 'By Tour',  icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'reviews',  label: 'Reviews',  icon: <Star className="w-4 h-4" /> },
+    { key: 'users',    label: 'Users',    icon: <Users className="w-4 h-4" /> },
     { key: 'email',    label: 'Email',    icon: <Mail className="w-4 h-4" /> },
   ];
 
@@ -711,6 +712,11 @@ export default function AdminDashboard() {
           <ReviewsPanel />
         )}
 
+        {/* ── USERS TAB ── */}
+        {activeTab === 'users' && (
+          <UsersPanel currentUserId={user?.id ?? 0} />
+        )}
+
         {/* ── EMAIL SETTINGS TAB ── */}
         {activeTab === 'email' && (
           <EmailSettingsPanel adminEmail={user?.email ?? ''} />
@@ -1121,6 +1127,386 @@ function EmailSettingsPanel({ adminEmail }: { adminEmail: string }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Users Management Panel ────────────────────────────────────────────────────
+
+interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  role: 'customer' | 'vendor' | 'admin';
+  status: 'active' | 'suspended' | 'pending_approval';
+  avatar?: string | null;
+  phone?: string | null;
+  createdAt?: string;
+  tourCount?: number;
+}
+
+const ROLE_LABELS: Record<string, string> = { admin: 'Admin', vendor: 'Vendor', customer: 'Customer' };
+const ROLE_COLORS: Record<string, string> = {
+  admin:    'bg-violet-100 text-violet-800 border-violet-200',
+  vendor:   'bg-blue-100 text-blue-800 border-blue-200',
+  customer: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+const STATUS_BADGE: Record<string, string> = {
+  active:           'bg-emerald-100 text-emerald-800 border-emerald-200',
+  suspended:        'bg-red-100 text-red-800 border-red-200',
+  pending_approval: 'bg-amber-100 text-amber-800 border-amber-200',
+};
+const STATUS_LABEL: Record<string, string> = {
+  active: 'Active', suspended: 'Suspended', pending_approval: 'Pending',
+};
+
+function UsersPanel({ currentUserId }: { currentUserId: number }) {
+  const [users, setUsers] = React.useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [roleFilter, setRoleFilter] = React.useState<string>('all');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [search, setSearch] = React.useState('');
+  const [actionResult, setActionResult] = React.useState<{ ok: boolean; message: string } | null>(null);
+  const [pendingId, setPendingId] = React.useState<number | null>(null);
+
+  const fetchUsers = React.useCallback(async () => {
+    setIsLoading(true);
+    setActionResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const params = new URLSearchParams();
+      if (roleFilter !== 'all') params.set('role', roleFilter);
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      const resp = await fetch(`/api/admin/users?${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await resp.json();
+      if (resp.ok) setUsers(Array.isArray(data) ? data : []);
+      else setActionResult({ ok: false, message: data.error ?? 'Failed to load users.' });
+    } catch {
+      setActionResult({ ok: false, message: 'Network error.' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [roleFilter, statusFilter]);
+
+  React.useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  const handleUpdate = async (userId: number, updates: { role?: string; status?: string }) => {
+    setPendingId(userId);
+    setActionResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const resp = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(updates),
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u));
+        const action = updates.role
+          ? `Role changed to ${ROLE_LABELS[updates.role] ?? updates.role}`
+          : updates.status === 'active' ? 'Account reactivated'
+          : updates.status === 'suspended' ? 'Account suspended'
+          : 'Account approved';
+        setActionResult({ ok: true, message: action });
+      } else {
+        setActionResult({ ok: false, message: data.error ?? 'Update failed.' });
+      }
+    } catch {
+      setActionResult({ ok: false, message: 'Network error.' });
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const handleDelete = async (u: AdminUser) => {
+    if (!confirm(`Permanently delete ${u.name} (${u.email})?\n\nThis cannot be undone.`)) return;
+    setPendingId(u.id);
+    setActionResult(null);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const resp = await fetch(`/api/admin/users/${u.id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setUsers(prev => prev.filter(x => x.id !== u.id));
+        setActionResult({ ok: true, message: `${u.name} has been deleted.` });
+      } else {
+        setActionResult({ ok: false, message: data.error ?? 'Delete failed.' });
+      }
+    } catch {
+      setActionResult({ ok: false, message: 'Network error.' });
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const filtered = users.filter(u => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
+
+  const pending = filtered.filter(u => u.status === 'pending_approval');
+  const rest    = filtered.filter(u => u.status !== 'pending_approval');
+  const sorted  = [...pending, ...rest];
+
+  return (
+    <div>
+      {/* Header + filter bar */}
+      <div className="flex flex-wrap items-end gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-serif font-bold mb-1">User Management</h2>
+          <p className="text-muted-foreground text-sm">Manage accounts, roles, and vendor approvals.</p>
+        </div>
+
+        {/* Stats pills */}
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
+          {(['all','admin','vendor','customer'] as const).map(r => {
+            const cnt = r === 'all' ? users.length : users.filter(u => u.role === r).length;
+            return (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  roleFilter === r
+                    ? r === 'all' ? 'bg-foreground text-background border-foreground'
+                      : ROLE_COLORS[r]
+                    : 'bg-background text-muted-foreground border-border hover:bg-muted/30'
+                }`}
+              >
+                {r === 'all' ? 'All' : ROLE_LABELS[r]} ({cnt})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Search + status filter + refresh row */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-4 mb-5 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or email…"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Status</label>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="pending_approval">Pending approval</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+
+        {(search || roleFilter !== 'all' || statusFilter !== 'all') && (
+          <button
+            onClick={() => { setSearch(''); setRoleFilter('all'); setStatusFilter('all'); }}
+            className="text-xs text-muted-foreground hover:text-foreground underline self-end pb-2"
+          >
+            Clear filters
+          </button>
+        )}
+
+        <button
+          onClick={fetchUsers}
+          disabled={isLoading}
+          className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-2 bg-background hover:bg-muted/30 transition-all"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Action feedback */}
+      {actionResult && (
+        <div className={`mb-4 flex items-start gap-3 p-4 rounded-xl border text-sm ${actionResult.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+          {actionResult.ok
+            ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
+            : <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+          }
+          {actionResult.message}
+        </div>
+      )}
+
+      {/* Table */}
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="p-12 text-center text-muted-foreground">
+          <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">No users found</p>
+          {(search || roleFilter !== 'all' || statusFilter !== 'all') && (
+            <p className="text-sm mt-1">Try clearing your filters</p>
+          )}
+        </div>
+      ) : (
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-medium">User</th>
+                  <th className="px-6 py-4 font-medium">Role</th>
+                  <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium text-center">Tours</th>
+                  <th className="px-6 py-4 font-medium">Joined</th>
+                  <th className="px-6 py-4 font-medium">Change Role</th>
+                  <th className="px-6 py-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sorted.map(u => {
+                  const isPending = pendingId === u.id;
+                  const isSelf   = u.id === currentUserId;
+                  return (
+                    <tr
+                      key={u.id}
+                      className={`hover:bg-muted/20 transition-colors ${u.status === 'pending_approval' ? 'bg-amber-50/40' : ''}`}
+                    >
+                      {/* User info */}
+                      <td className="px-6 py-4">
+                        <p className="font-semibold">{u.name}{isSelf && <span className="ml-1.5 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">You</span>}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
+                        {u.phone && <p className="text-xs text-muted-foreground/60 mt-0.5">{u.phone}</p>}
+                      </td>
+
+                      {/* Role badge */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${ROLE_COLORS[u.role]}`}>
+                          {u.role === 'admin' && <Shield className="w-3 h-3" />}
+                          {u.role === 'vendor' && <Building2 className="w-3 h-3" />}
+                          {u.role === 'customer' && <Users className="w-3 h-3" />}
+                          {ROLE_LABELS[u.role]}
+                        </span>
+                      </td>
+
+                      {/* Status badge + quick-approve/suspend */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${STATUS_BADGE[u.status]}`}>
+                            {STATUS_LABEL[u.status]}
+                          </span>
+                          {u.status === 'pending_approval' && (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleUpdate(u.id, { status: 'active' })}
+                                disabled={isPending}
+                                title="Approve vendor"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Approve
+                              </button>
+                              <button
+                                onClick={() => handleUpdate(u.id, { status: 'suspended' })}
+                                disabled={isPending}
+                                title="Reject vendor"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-colors disabled:opacity-50"
+                              >
+                                <XCircle className="w-3 h-3" /> Reject
+                              </button>
+                            </div>
+                          )}
+                          {u.status === 'active' && !isSelf && (
+                            <button
+                              onClick={() => handleUpdate(u.id, { status: 'suspended' })}
+                              disabled={isPending}
+                              title="Suspend account"
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
+                            >
+                              <UserX className="w-3 h-3" /> Suspend
+                            </button>
+                          )}
+                          {u.status === 'suspended' && (
+                            <button
+                              onClick={() => handleUpdate(u.id, { status: 'active' })}
+                              disabled={isPending}
+                              title="Reactivate account"
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-emerald-600 transition-colors disabled:opacity-50"
+                            >
+                              <UserCheck className="w-3 h-3" /> Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Tour count */}
+                      <td className="px-6 py-4 text-center">
+                        {u.role === 'vendor' ? (
+                          <span className="font-semibold">{u.tourCount ?? 0}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
+
+                      {/* Joined date */}
+                      <td className="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                        {u.createdAt ? format(new Date(u.createdAt), 'MMM dd, yyyy') : '—'}
+                      </td>
+
+                      {/* Change role */}
+                      <td className="px-6 py-4">
+                        <div className="relative inline-block">
+                          <select
+                            value={u.role}
+                            disabled={isPending || isSelf}
+                            onChange={e => handleUpdate(u.id, { role: e.target.value })}
+                            className={`appearance-none pr-6 pl-2 py-1 text-xs font-semibold rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all ${ROLE_COLORS[u.role]} ${(isPending || isSelf) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <option value="customer">Customer</option>
+                            <option value="vendor">Vendor</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" />
+                        </div>
+                        {isSelf && <p className="text-[10px] text-muted-foreground/50 mt-0.5">Can't change own role</p>}
+                      </td>
+
+                      {/* Delete */}
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleDelete(u)}
+                          disabled={isPending || isSelf}
+                          title={isSelf ? 'Cannot delete your own account' : 'Delete user'}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          {isPending
+                            ? <RefreshCw className="w-4 h-4 animate-spin" />
+                            : <Trash2 className="w-4 h-4" />
+                          }
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-3 border-t border-border bg-muted/20 text-xs text-muted-foreground">
+            {sorted.length} user{sorted.length !== 1 ? 's' : ''} shown
+            {pending.length > 0 && <span className="ml-2 text-amber-700 font-semibold">· {pending.length} pending approval</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

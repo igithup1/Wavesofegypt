@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { hashPassword } from "./lib/auth";
 
 const rawPort = process.env["PORT"];
@@ -24,6 +24,10 @@ if (Number.isNaN(port) || port <= 0) {
 // correct credentials.  Once the admin is confirmed working this block can be
 // removed.
 async function ensureAdmin(): Promise<void> {
+  // Runtime migration: add status column if not exists (idempotent)
+  await db.execute(
+    sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`
+  );
   const ADMIN_EMAIL = "aaaaaaa.sultan@gmail.com";
   const ADMIN_HASH  = hashPassword("Aboroqya456"); // 8cf79cf6…
 

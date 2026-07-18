@@ -991,6 +991,7 @@ export const GetAdminDashboardResponse = zod.object({
  */
 export const ListUsersQueryParams = zod.object({
   "role": zod.enum(['customer', 'vendor', 'admin']).optional(),
+  "status": zod.enum(['active', 'suspended', 'pending_approval']).optional(),
   "limit": zod.coerce.number().optional(),
   "offset": zod.coerce.number().optional()
 })
@@ -1000,10 +1001,37 @@ export const ListUsersResponseItem = zod.object({
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.enum(['customer', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'suspended', 'pending_approval']).default('active'),
+  "avatar": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "tourCount": zod.number().optional()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+/**
+ * @summary Update a user (admin)
+ */
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['customer', 'vendor', 'admin']).optional(),
+  "status": zod.enum(['active', 'suspended', 'pending_approval']).optional()
+})
+export const UpdateUserResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['customer', 'vendor', 'admin']),
+  "status": zod.enum(['active', 'suspended', 'pending_approval']),
   "avatar": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "createdAt": zod.coerce.date().optional()
 })
-export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+/**
+ * @summary Delete a user (admin)
+ */
+export const DeleteUserResponse = zod.object({
+  "message": zod.string()
+})
 
 
