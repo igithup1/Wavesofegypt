@@ -13,7 +13,7 @@ import {
   UpdateBookingResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthRequest } from "../lib/auth";
-import { sendBookingConfirmationEmail } from "../lib/email";
+import { sendBookingConfirmationEmail, sendBookingConfirmationEmailStrict } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -271,6 +271,58 @@ router.patch("/bookings/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(UpdateBookingResponse.parse(
     formatBooking(booking, tour?.title, tour?.coverImage, bookingUser?.name)
   ));
+});
+
+router.post("/bookings/:id/resend-confirmation", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthRequest).user;
+
+  if (user.role !== "admin") {
+    res.status(403).json({ error: "Only admins can resend confirmation emails" });
+    return;
+  }
+
+  const params = GetBookingParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [booking] = await db.select().from(bookingsTable).where(eq(bookingsTable.id, params.data.id));
+  if (!booking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  const [tour] = await db.select().from(toursTable).where(eq(toursTable.id, booking.tourId));
+  const [bookingUser] = await db.select().from(usersTable).where(eq(usersTable.id, booking.userId));
+
+  if (!bookingUser) {
+    res.status(404).json({ error: "Traveler account not found" });
+    return;
+  }
+
+  const bookingRef = `WOE-${String(booking.id).padStart(5, "0")}`;
+  const bookingDate = new Date(booking.date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  try {
+    await sendBookingConfirmationEmailStrict({
+      travelerName: bookingUser.name ?? "Traveler",
+      travelerEmail: bookingUser.email,
+      bookingRef,
+      tourName: tour?.title ?? `Tour #${booking.tourId}`,
+      date: bookingDate,
+      participants: booking.participants,
+      totalPrice: Number(booking.totalPrice),
+    });
+    res.json({ message: `Confirmation email resent to ${bookingUser.email}` });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send email";
+    res.status(502).json({ error: message });
+  }
 });
 
 export default router;

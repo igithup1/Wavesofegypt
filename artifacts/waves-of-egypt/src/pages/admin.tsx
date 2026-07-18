@@ -34,6 +34,64 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   );
 }
 
+type ResendState = 'idle' | 'sending' | 'success' | 'error';
+
+function ResendConfirmationButton({ bookingId }: { bookingId: number }) {
+  const [state, setState] = React.useState<ResendState>('idle');
+  const [message, setMessage] = React.useState('');
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const handleClick = async () => {
+    setState('sending');
+    setMessage('');
+    try {
+      const resp = await fetch(`/api/bookings/${bookingId}/resend-confirmation`, { method: 'POST' });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok) {
+        setState('success');
+        setMessage(data.message ?? 'Email sent');
+      } else {
+        setState('error');
+        setMessage(data.error ?? 'Failed to send email');
+      }
+    } catch {
+      setState('error');
+      setMessage('Network error');
+    }
+    timerRef.current = setTimeout(() => { setState('idle'); setMessage(''); }, 4000);
+  };
+
+  if (state === 'success') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+        <CheckCircle2 className="w-3.5 h-3.5" /> Sent
+      </span>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600" title={message}>
+        <XCircle className="w-3.5 h-3.5" /> Failed
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={state === 'sending'}
+      title="Resend confirmation email to traveler"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-wait"
+    >
+      <Send className={`w-3 h-3 ${state === 'sending' ? 'animate-pulse' : ''}`} />
+      {state === 'sending' ? 'Sending…' : 'Resend email'}
+    </button>
+  );
+}
+
 function StatusSelect({
   bookingId,
   currentStatus,
@@ -462,6 +520,7 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 font-medium text-right">Total</th>
                         <th className="px-6 py-4 font-medium">Status</th>
                         <th className="px-6 py-4 font-medium text-muted-foreground/60">Booked</th>
+                        <th className="px-6 py-4 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -496,6 +555,9 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4 text-xs text-muted-foreground/60 whitespace-nowrap">
                             {format(new Date(booking.createdAt), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <ResendConfirmationButton bookingId={booking.id} />
                           </td>
                         </tr>
                       ))}
