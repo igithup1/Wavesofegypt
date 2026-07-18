@@ -9,6 +9,7 @@ import {
   FlatList,
   ActivityIndicator,
   Platform,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useGetTour } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { WEB_APP_URL } from '@/constants/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -55,6 +57,21 @@ export default function TourDetailScreen() {
     );
     const url = `https://wa.me/${number}?text=${msg}`;
     import('expo-linking').then(({ openURL }) => openURL(url));
+  };
+
+  const handleShare = async () => {
+    if (!tour) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const url = `${WEB_APP_URL}/tours/${tourId}`;
+    try {
+      await Share.share({
+        title: tour.title,
+        message: Platform.OS === 'ios' ? tour.title : `${tour.title}\n${url}`,
+        url,
+      });
+    } catch {
+      // user cancelled or share unavailable — silent
+    }
   };
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
@@ -99,6 +116,23 @@ export default function TourDetailScreen() {
       >
         <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
       </Pressable>
+
+      {/* Floating Share Button */}
+      {tour && (
+        <Pressable
+          onPress={handleShare}
+          style={({ pressed }) => [
+            styles.shareBtn,
+            {
+              top: topPad + 8,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              opacity: pressed ? 0.75 : 1,
+            },
+          ]}
+        >
+          <Ionicons name="share-outline" size={22} color="#FFFFFF" />
+        </Pressable>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -380,6 +414,16 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: 16,
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareBtn: {
+    position: 'absolute',
+    right: 16,
     zIndex: 20,
     width: 40,
     height: 40,

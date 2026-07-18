@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
+  Share,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -13,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useWishlist } from '@/contexts/WishlistContext';
 import type { Tour } from '@workspace/api-client-react';
+import { WEB_APP_URL } from '@/constants/config';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -28,6 +31,19 @@ function openWhatsApp(tourTitle: string, whatsapp?: string | null) {
   );
   // Use Linking in a safe way — just return the URL for the parent to handle
   return `https://wa.me/${number}?text=${msg}`;
+}
+
+async function shareTour(tourId: number, tourTitle: string) {
+  const url = `${WEB_APP_URL}/tours/${tourId}`;
+  try {
+    await Share.share({
+      title: tourTitle,
+      message: Platform.OS === 'ios' ? tourTitle : `${tourTitle}\n${url}`,
+      url,
+    });
+  } catch {
+    // user cancelled — silent
+  }
 }
 
 export function TourCard({ tour, horizontal = false }: TourCardProps) {
@@ -167,25 +183,46 @@ export function TourCard({ tour, horizontal = false }: TourCardProps) {
               <Text style={[styles.perPerson, { color: colors.mutedForeground }]}>/pp</Text>
             </View>
           </View>
-          {/* WhatsApp quick book */}
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const url = openWhatsApp(tour.title);
-              // Use expo-linking — polyfilled on web
-              import('expo-linking').then(({ openURL }) => openURL(url));
-            }}
-            style={({ pressed }) => [
-              styles.waButton,
-              {
-                backgroundColor: pressed ? '#1DA851' : '#25D366',
-                borderRadius: colors.radius - 4,
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
-          >
-            <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
-          </Pressable>
+          {/* Action buttons */}
+          <View style={styles.actionButtons}>
+            {/* Share */}
+            <Pressable
+              onPress={(e) => {
+                if (e?.stopPropagation) e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                shareTour(tour.id, tour.title);
+              }}
+              style={({ pressed }) => [
+                styles.iconButton,
+                {
+                  backgroundColor: colors.muted,
+                  borderRadius: colors.radius - 4,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="share-outline" size={18} color={colors.foreground} />
+            </Pressable>
+            {/* WhatsApp quick book */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                const url = openWhatsApp(tour.title);
+                // Use expo-linking — polyfilled on web
+                import('expo-linking').then(({ openURL }) => openURL(url));
+              }}
+              style={({ pressed }) => [
+                styles.waButton,
+                {
+                  backgroundColor: pressed ? '#1DA851' : '#25D366',
+                  borderRadius: colors.radius - 4,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
       </View>
     </Pressable>
@@ -319,6 +356,17 @@ const styles = StyleSheet.create({
   },
   perPerson: {
     fontSize: 11,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   waButton: {
     width: 40,
